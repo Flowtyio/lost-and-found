@@ -2,6 +2,25 @@ import FlowToken from "./standard/FlowToken.cdc"
 import FungibleToken from "./standard/FungibleToken.cdc"
 import NonFungibleToken from "./standard/NonFungibleToken.cdc"
 
+// LostAndFound
+// One big problem on the flow blockchain is how to handle accounts that are
+// not configured to receive assets that you want to send. Currently, 
+// Lots of platforms have to create their own escrow for people to redeem. IF not an
+// escrow, accounts might instead be skipped on things like an airtdrop
+// because they aren't able to reeive the assets they should have gotten.
+// 
+// The LostAndFound is split into a few key components:
+// Ticket  - Tickets contain the resource which can be redeemed by a user. Everything else is organization around them.
+// Bin     - Bins sort tickets by their type. If two ExampleNFT.NFT items are deposited, there would be two tickets made.
+//           Those two tickets would be put in the same Bin because they are the same type
+// Shelf   - Shelves organize bins by address. When a resource is deposited into the LostAndFound, its receiver shelf is
+//           located, then the appropriate bin is picked for the item to go to. If the bin doesn't exist yet, a new one is made.
+// 
+// In order for an account to redeem an item, they have to supply a receiver which matches the address of the ticket's redeemer
+// For ease of use, there are three supported receivers:
+// - NonFunigibleToken.Receiver
+// - FungibleToken.Receiver
+// - LostAndFound.ResourceReceiver (This is a placeholder so that non NFT and FT resources can be utilized here)
 pub contract LostAndFound {
     pub let LostAndFoundPublicPath: PublicPath
     pub let LostAndFoundStoragePath: StoragePath
@@ -9,26 +28,43 @@ pub contract LostAndFound {
     pub event TicketDeposited(redeemer: Address, ticketID: UInt64, type: Type)
     pub event TicketRedeemed(redeemer: Address, ticketID: UInt64, type: Type)
 
+    // Placeholder receiver so that any resource can be supported, not just FT and NFT Receivers
     pub resource interface AnyResourceReceiver {
         pub fun deposit(resource: @AnyResource)
     }
 
+    // Empty resource so we can unwrap ticket items for deposits to their corresponding receiver.
     pub resource DummyResource {
         init() { }
     }
 
+    // TicketPublic - Helper functions to redeem tickets and get information about them
     pub resource interface TicketPublic {
+        // Borrow the underlying item in a ticket
         pub fun borrowItem(): &AnyResource?
+        // Return the address that is approved to redeem this ticket
         pub fun getRedeemer(): Address
+        // A ticket can onlyl be redeemed once
         pub fun isRedeemed(): Bool
+        // Cast this ticket's item into NonFungibleToken.NFT and deposit it into an NFT Receiver
         pub fun withdrawToNFTReceiver(receiver: Capability<&{NonFungibleToken.Receiver}>)
+        // Cast this ticket's item into FungibleToken.Vault and deposit it into an FungibleToken Receiver
         pub fun withdrawToFTReceiver(receiver: Capability<&{FungibleToken.Receiver}>)
+        // Deposit the ticker's item as it into a receiver that accepts AnyResource
         pub fun withdrawToAnyResourceReceiver(receiver: Capability<&{LostAndFound.AnyResourceReceiver}>)
     }
 
+    // Tickets are the resource that hold items to be redeemed. They carry with them:
+    // - item: The Resource which has been deposited to be withdrawn/redeemed
+    // - memo: An optional message to attach to this ticket
+    // - redeemer: The address which is allowed to withdraw the item from this ticket
+    // - redeemed: Whether the ticket has been redeemed. This can only be set by the LostAndFound contract
     pub resource Ticket: TicketPublic {
+        // The item to be redeemed
         pub var item: @AnyResource
+        // An optional message to attach to this item.
         pub let memo: String?
+        // The address that it allowed to withdraw the item fromt this ticket
         pub let redeemer: Address
 
         // State maintained by LostAndFound
@@ -42,6 +78,7 @@ pub contract LostAndFound {
             self.redeemed = false
         }
 
+        // used when an item is withdrawn, ensures that the ticket is only redeemed one time
         access(contract) fun setIsRedeemed() {
             self.redeemed = true
         }
@@ -70,6 +107,7 @@ pub contract LostAndFound {
             }
 
 
+            // Indiana Jones swap the item in our ticket so we can deposit it
             var redeemableItem <- create LostAndFound.DummyResource() as @AnyResource
             redeemableItem <-> self.item
             
@@ -85,6 +123,7 @@ pub contract LostAndFound {
                 receiver.check(): "receiver check failed"
             }
 
+            // Indiana Jones swap the item in our ticket so we can deposit it
             var redeemableItem <- create LostAndFound.DummyResource() as @AnyResource
             redeemableItem <-> self.item
 
@@ -100,6 +139,7 @@ pub contract LostAndFound {
                 receiver.check(): "receiver check failed"
             }
 
+            // Indiana Jones swap the item in our ticket so we can deposit it
             var redeemableItem <- create LostAndFound.DummyResource() as @AnyResource
             redeemableItem <-> self.item
 
@@ -108,6 +148,7 @@ pub contract LostAndFound {
             self.setIsRedeemed()
         }
 
+        // destricton is only allowed if the ticket has been redeemed and the underlying item is a our dummy resource
         destroy () {
             pre {
                 self.redeemed: "Ticket has not been redeemed"
@@ -124,6 +165,9 @@ pub contract LostAndFound {
         pub fun destroyTicket(ticketID: UInt64)
     }
 
+    // A Bin is a resource that gathers tickets whos item have the same type.
+    // For instance, if two TopShot Moments are deposited to the same redeemer, only one bin
+    // will be made which will contain both tickets to redeem each individual moment.
     pub resource Bin {
         pub let tickets: @{UInt64:Ticket}
         pub let type: Type
@@ -137,6 +181,7 @@ pub contract LostAndFound {
             return &self.tickets[id] as &LostAndFound.Ticket{LostAndFound.TicketPublic}
         }
 
+        // deposit a ticket to this bin. The item type must match this bin's item type.
         pub fun deposit(ticket: @LostAndFound.Ticket) {
             pre {
                 ticket.item.getType() == self.type: "ticket and bin types must match"
@@ -186,6 +231,9 @@ pub contract LostAndFound {
         )
     }
 
+    // A shelf is our top-level organization resource.
+    // It groups bins by redeemer to help make discovery of the assets that a
+    // redeeming address can claim. 
     pub resource Shelf: ShelfPublic {
         pub let bins: @{String: Bin}
         pub let identifierToType: {String: Type}
@@ -237,6 +285,11 @@ pub contract LostAndFound {
             binPublic.deposit(ticket: <-ticket)
         }
 
+        // Redeem all the tickets of a given type. This is just a convenience function
+        // so that a redeemer doesn't have to coordinate redeeming each ticket individually
+        // Only one of the three receiver options can be specified, and an optional maximum number of tickets
+        // to redeem can be picked to prevent gas issues in case there are large numbers of tickets to be
+        // redeemed at once.
         pub fun redeemAll(
             type: Type,
             max: Int?,
@@ -263,6 +316,7 @@ pub contract LostAndFound {
             }
         }
 
+        // Redeem a specific ticket instead of all of a certain type.
         pub fun redeem(
             type: Type,
             ticketID: UInt64,
@@ -282,6 +336,7 @@ pub contract LostAndFound {
         }
 
 
+        // the internal redmption mechanic to join together the two different ways of redeeming (all of them or by ticketID)
         access(self) fun _redeemTicket(
             type: Type,
             ticketID: UInt64,
@@ -315,6 +370,7 @@ pub contract LostAndFound {
         pub fun borrowShelf(redeemer: Address): &LostAndFound.Shelf
     }
 
+    // ShelfManager is a light-weight wrapper to get our shelves into storage.
     pub resource ShelfManager: ShelfManagerPublic {
         access(self) let shelves: @{Address: Shelf}
 
