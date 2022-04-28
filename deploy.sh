@@ -1,0 +1,11 @@
+echo "creating lostandfound account"
+flow accounts create --key 57f6f3db7a4f0b1da9784cf5768cf8a4027aecf79d1f588ad761c29cba1bdf0e265644399202fabe89dea63b979f9b79b6580e490ef391f99bb7f74ee8d50ea3
+
+echo "creating sender account"
+flow accounts create --key 57f6f3db7a4f0b1da9784cf5768cf8a4027aecf79d1f588ad761c29cba1bdf0e265644399202fabe89dea63b979f9b79b6580e490ef391f99bb7f74ee8d50ea3
+
+echo "creating receiver account"
+flow accounts create --key 57f6f3db7a4f0b1da9784cf5768cf8a4027aecf79d1f588ad761c29cba1bdf0e265644399202fabe89dea63b979f9b79b6580e490ef391f99bb7f74ee8d50ea3
+
+echo "deploying..."
+flow project deploy
