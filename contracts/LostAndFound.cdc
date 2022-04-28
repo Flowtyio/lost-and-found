@@ -3,8 +3,8 @@ import FungibleToken from "./standard/FungibleToken.cdc"
 import NonFungibleToken from "./standard/NonFungibleToken.cdc"
 
 pub contract LostAndFound {
-    // TODO: move shelves to storage instead of being on the contract itself
-    access(contract) let shelves: @{Address: Shelf}
+    pub let LostAndFoundPublicPath: PublicPath
+    pub let LostAndFoundStoragePath: StoragePath
 
     pub event TicketDeposited(redeemer: Address, ticketID: UInt64, type: Type)
     pub event TicketRedeemed(redeemer: Address, ticketID: UInt64, type: Type)
@@ -310,25 +310,50 @@ pub contract LostAndFound {
         }
     }
 
-    pub fun deposit(redeemer: Address, item: @AnyResource, memo: String?) {
-        // check if there is a shelf for this user
-        if !LostAndFound.shelves.containsKey(redeemer) {
-            let oldValue <- LostAndFound.shelves.insert(key: redeemer, <- create Shelf(redeemer: redeemer))
-            destroy oldValue
-        }
-
-        let ticket <- create Ticket(item: <-item, memo: memo, redeemer: redeemer)
-
-        let shelfPublic = LostAndFound.borrowShelf(redeemer: redeemer)
-        shelfPublic.deposit(ticket: <-ticket)
+    pub resource interface ShelfManagerPublic {
+        pub fun deposit(redeemer: Address, item: @AnyResource, memo: String?)
+        pub fun borrowShelf(redeemer: Address): &LostAndFound.Shelf
     }
 
-    pub fun borrowShelf(redeemer: Address): &LostAndFound.Shelf {
-        return &self.shelves[redeemer] as &LostAndFound.Shelf
+    pub resource ShelfManager: ShelfManagerPublic {
+        access(self) let shelves: @{Address: Shelf}
+
+        init() {
+            self.shelves <- {}
+        }
+
+        pub fun deposit(redeemer: Address, item: @AnyResource, memo: String?) {
+            // check if there is a shelf for this user
+            if !self.shelves.containsKey(redeemer) {
+                let oldValue <- self.shelves.insert(key: redeemer, <- create Shelf(redeemer: redeemer))
+                destroy oldValue
+            }
+
+            let ticket <- create Ticket(item: <-item, memo: memo, redeemer: redeemer)
+
+            let shelfPublic = self.borrowShelf(redeemer: redeemer)
+            shelfPublic.deposit(ticket: <-ticket)
+        }
+
+        pub fun borrowShelf(redeemer: Address): &LostAndFound.Shelf {
+            return &self.shelves[redeemer] as &LostAndFound.Shelf
+        }
+
+        destroy () {
+            destroy <-self.shelves
+        }
+    }
+
+    pub fun borrowShelfManagerPublic(): &LostAndFound.ShelfManager{LostAndFound.ShelfManagerPublic} {
+        return self.account.getCapability<&LostAndFound.ShelfManager{LostAndFound.ShelfManagerPublic}>(LostAndFound.LostAndFoundPublicPath).borrow()!
     }
 
     init() {
-        self.shelves <- {}
+        self.LostAndFoundPublicPath = /public/lostAndFound
+        self.LostAndFoundStoragePath = /storage/lostAndFound
 
+        let manager <- create ShelfManager()
+        self.account.save(<-manager, to: self.LostAndFoundStoragePath)
+        self.account.link<&LostAndFound.ShelfManager{LostAndFound.ShelfManagerPublic}>(self.LostAndFoundPublicPath, target: self.LostAndFoundStoragePath)
     }
 }

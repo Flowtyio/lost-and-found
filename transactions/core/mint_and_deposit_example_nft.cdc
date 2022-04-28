@@ -16,6 +16,6 @@ transaction(recipient: Address) {
 
     execute {
         let token <- self.minter.mintAndReturnNFT(name: "testname", description: "descr", thumbnail: "image.html", royalties: [])
-        LostAndFound.deposit(redeemer: recipient, item: <-token, memo: "test memo")
+        LostAndFound.borrowShelfManagerPublic().deposit(redeemer: recipient, item: <-token, memo: "test memo")
     }
 }
