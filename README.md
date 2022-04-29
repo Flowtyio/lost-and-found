@@ -35,4 +35,137 @@ items that have been sent to them, and another helper to deposit items to a rede
 
 ## Usage
 
-TODO: Put in example transactions here
+### NFTs
+
+Deposit an item
+```
+import ExampleNFT from 0xf8d6e0586b0a20c7
+import NonFungibleToken from 0xf8d6e0586b0a20c7
+
+import LostAndFound from 0x179b6b1cb6755e31
+
+transaction(recipient: Address) {
+    // local variable for storing the minter reference
+    let minter: &ExampleNFT.NFTMinter
+
+    prepare(acct: AuthAccount) {
+
+        // borrow a reference to the NFTMinter resource in storage
+        self.minter = acct.borrow<&ExampleNFT.NFTMinter>(from: /storage/exampleNFTMinter)
+            ?? panic("Could not borrow a reference to the NFT minter")
+    }
+
+    execute {
+        let token <- self.minter.mintAndReturnNFT(name: "testname", description: "descr", thumbnail: "image.html", royalties: [])
+        LostAndFound.borrowShelfManagerPublic().deposit(redeemer: recipient, item: <-token, memo: "test memo")
+    }
+}
+```
+
+Redeem them all
+```
+import ExampleNFT from 0xf8d6e0586b0a20c7
+import NonFungibleToken from 0xf8d6e0586b0a20c7
+
+import LostAndFound from 0x179b6b1cb6755e31
+
+transaction() {
+    let receiver: Capability<&{NonFungibleToken.CollectionPublic}>
+    let redeemer: Address
+
+    prepare(acct: AuthAccount) {
+        self.redeemer = acct.address
+
+        if !acct.getCapability<&{NonFungibleToken.CollectionPublic}>(ExampleNFT.CollectionPublicPath).check() {
+            let collection <- ExampleNFT.createEmptyCollection()
+
+            // save it to the account
+            acct.save(<-collection, to: /storage/NFTCollection)
+
+            // create a public capability for the collection
+            acct.link<&{NonFungibleToken.CollectionPublic}>(
+                ExampleNFT.CollectionPublicPath,
+                target: /storage/NFTCollection
+            )
+        }
+        
+        self.receiver = acct.getCapability<&{NonFungibleToken.CollectionPublic}>(ExampleNFT.CollectionPublicPath)
+    }
+
+    execute {
+        let shelfManager = LostAndFound.borrowShelfManagerPublic()
+        let shelf = shelfManager.borrowShelf(redeemer: self.redeemer)
+        shelf.redeemAll(type: Type<@ExampleNFT.NFT>(), max: nil, nftReceiver: self.receiver, ftReceiver: nil, anyResourceReceiver: nil)
+    }
+}
+```
+
+### Fungible Tokens
+Deposit a vault
+```
+import FungibleToken from 0xee82856bf20e2aa6
+import ExampleToken from 0xf8d6e0586b0a20c7
+
+import LostAndFound from 0x179b6b1cb6755e31
+
+transaction(redeemer: Address, amount: UFix64) {
+    let tokenAdmin: &ExampleToken.Administrator
+
+    prepare(signer: AuthAccount) {
+        self.tokenAdmin = signer.borrow<&ExampleToken.Administrator>(from: /storage/exampleTokenAdmin)
+            ?? panic("Signer is not the token admin")
+    }
+
+    execute {
+        let minter <- self.tokenAdmin.createNewMinter(allowedAmount: amount)
+        let mintedVault <- minter.mintTokens(amount: amount)
+        let manager = LostAndFound.borrowShelfManagerPublic()
+        manager.deposit(redeemer: redeemer, item: <-mintedVault, memo: "hello!")
+
+        destroy minter
+    }
+}
+```
+
+Redeem them
+```
+import ExampleToken from 0xf8d6e0586b0a20c7
+import FungibleToken from 0xee82856bf20e2aa6
+
+import LostAndFound from 0x179b6b1cb6755e31
+
+transaction() {
+    let receiver: Capability<&{FungibleToken.Receiver}>
+    let redeemer: Address
+
+    prepare(acct: AuthAccount) {
+        self.redeemer = acct.address
+
+        if !acct.getCapability<&{FungibleToken.Receiver}>(/public/exampleTokenReceiver).check() {
+            acct.save(
+                <-ExampleToken.createEmptyVault(),
+                to: /storage/exampleTokenVault
+            )
+
+            acct.link<&ExampleToken.Vault{FungibleToken.Receiver}>(
+                /public/exampleTokenReceiver,
+                target: /storage/exampleTokenVault
+            )
+
+            acct.link<&ExampleToken.Vault{FungibleToken.Balance}>(
+                /public/exampleTokenBalance,
+                target: /storage/exampleTokenVault
+            )
+        }
+        
+        self.receiver = acct.getCapability<&{FungibleToken.Receiver}>(/public/exampleTokenReceiver)
+    }
+
+    execute {
+        let shelfManager = LostAndFound.borrowShelfManagerPublic()
+        let shelf = shelfManager.borrowShelf(redeemer: self.redeemer)
+        shelf.redeemAll(type: Type<@ExampleToken.Vault>(), max: nil, nftReceiver: nil, ftReceiver: self.receiver, anyResourceReceiver: nil)
+    }
+}
+ 
+```

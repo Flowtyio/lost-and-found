@@ -298,7 +298,9 @@ pub contract LostAndFound {
             anyResourceReceiver:Capability<&{LostAndFound.AnyResourceReceiver}>?,
         ) {
             pre {
-                nftReceiver != nil && ftReceiver == nil && anyResourceReceiver == nil: "Can only provide one receiver"
+                (nftReceiver != nil && ftReceiver == nil && anyResourceReceiver == nil) || 
+                (nftReceiver == nil && ftReceiver != nil && anyResourceReceiver == nil) || 
+                (nftReceiver == nil && ftReceiver == nil && anyResourceReceiver != nil): "Can only provide one receiver"
                 nftReceiver == nil || nftReceiver!.address == self.redeemer: "receiver must match the redeemer of this shelf"
                 ftReceiver == nil || ftReceiver!.address == self.redeemer: "receiver must match the redeemer of this shelf"
                 anyResourceReceiver == nil || anyResourceReceiver!.address == self.redeemer: "receiver must match the redeemer of this shelf"
@@ -346,6 +348,10 @@ pub contract LostAndFound {
         ) {
             let binPublic = self.borrowBin(type: type)!
             let ticket = binPublic.borrowTicket(id: ticketID)
+            if ticket.getType() == Type<@LostAndFound.DummyResource>() {
+                binPublic.destroyTicket(ticketID: ticketID)
+                return 
+            }
 
             if nftReceiver != nil {
                 ticket.withdrawToNFTReceiver(receiver: nftReceiver!)
@@ -358,6 +364,8 @@ pub contract LostAndFound {
             if anyResourceReceiver != nil {
                 ticket.withdrawToAnyResourceReceiver(receiver: anyResourceReceiver!)
             }
+
+            binPublic.destroyTicket(ticketID: ticketID)
         }
 
         destroy () {
