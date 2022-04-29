@@ -47,7 +47,7 @@ pub contract LostAndFound {
         // A ticket can onlyl be redeemed once
         pub fun isRedeemed(): Bool
         // Cast this ticket's item into NonFungibleToken.NFT and deposit it into an NFT Receiver
-        pub fun withdrawToNFTReceiver(receiver: Capability<&{NonFungibleToken.Receiver}>)
+        pub fun withdrawToNFTReceiver(receiver: Capability<&{NonFungibleToken.CollectionPublic}>)
         // Cast this ticket's item into FungibleToken.Vault and deposit it into an FungibleToken Receiver
         pub fun withdrawToFTReceiver(receiver: Capability<&{FungibleToken.Receiver}>)
         // Deposit the ticker's item as it into a receiver that accepts AnyResource
@@ -100,7 +100,7 @@ pub contract LostAndFound {
         }
 
 
-        pub fun withdrawToNFTReceiver(receiver: Capability<&{NonFungibleToken.Receiver}>) {
+        pub fun withdrawToNFTReceiver(receiver: Capability<&{NonFungibleToken.CollectionPublic}>) {
             pre {
                 receiver.address == self.redeemer: "receiver address and redeemer must match"
                 receiver.check(): "receiver check failed"
@@ -218,14 +218,14 @@ pub contract LostAndFound {
         pub fun redeemAll(
             type: Type,
             max: Int?,
-            nftReceiver: Capability<&{NonFungibleToken.Receiver}>?, 
+            nftReceiver: Capability<&{NonFungibleToken.CollectionPublic}>?, 
             ftReceiver: Capability<&{FungibleToken.Receiver}>?, 
             anyResourceReceiver:Capability<&{LostAndFound.AnyResourceReceiver}>?
         )
         pub fun redeem(
             type: Type,
             ticketID: UInt64,
-            nftReceiver: Capability<&{NonFungibleToken.Receiver}>?, 
+            nftReceiver: Capability<&{NonFungibleToken.CollectionPublic}>?, 
             ftReceiver: Capability<&{FungibleToken.Receiver}>?, 
             anyResourceReceiver:Capability<&{LostAndFound.AnyResourceReceiver}>?
         )
@@ -293,7 +293,7 @@ pub contract LostAndFound {
         pub fun redeemAll(
             type: Type,
             max: Int?,
-            nftReceiver: Capability<&{NonFungibleToken.Receiver}>?, 
+            nftReceiver: Capability<&{NonFungibleToken.CollectionPublic}>?, 
             ftReceiver: Capability<&{FungibleToken.Receiver}>?, 
             anyResourceReceiver:Capability<&{LostAndFound.AnyResourceReceiver}>?,
         ) {
@@ -320,7 +320,7 @@ pub contract LostAndFound {
         pub fun redeem(
             type: Type,
             ticketID: UInt64,
-            nftReceiver: Capability<&{NonFungibleToken.Receiver}>?, 
+            nftReceiver: Capability<&{NonFungibleToken.CollectionPublic}>?, 
             ftReceiver: Capability<&{FungibleToken.Receiver}>?, 
             anyResourceReceiver:Capability<&{LostAndFound.AnyResourceReceiver}>?
         ) {
@@ -340,7 +340,7 @@ pub contract LostAndFound {
         access(self) fun _redeemTicket(
             type: Type,
             ticketID: UInt64,
-            nftReceiver: Capability<&{NonFungibleToken.Receiver}>?, 
+            nftReceiver: Capability<&{NonFungibleToken.CollectionPublic}>?, 
             ftReceiver: Capability<&{FungibleToken.Receiver}>?, 
             anyResourceReceiver:Capability<&{LostAndFound.AnyResourceReceiver}>?
         ) {
