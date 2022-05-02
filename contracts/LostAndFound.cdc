@@ -89,16 +89,16 @@ pub contract LostAndFound {
 
         pub fun borrowItem(): &AnyResource? {            
             
-            if self.item != nil  {
-                var currentItem: @AnyResource <- self.item <- nil
-                var ref = &currentItem as &AnyResource
-                var dummy <- self.item <- currentItem
-                destroy dummy
-                return ref
-               // return &self.item as &AnyResource?  // TODO: secure cadence supports optional references 
+            if self.item == nil  {
+                return nil
             }
-            
-            return nil
+
+            var currentItem: @AnyResource <- self.item <- nil
+            var ref = &currentItem as &AnyResource
+            var dummy <- self.item <- currentItem
+            destroy dummy
+            return ref
+
         }
 
         pub fun isRedeemed(): Bool {
