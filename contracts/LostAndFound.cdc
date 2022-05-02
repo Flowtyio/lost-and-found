@@ -74,7 +74,7 @@ pub contract LostAndFound {
 
             var redeemableItem <- self.item <- nil
             
-            if redeemableItem.isInstance(Type<@NonFungibleToken.NFT>()) && receiver.check<&{NonFungibleToken.CollectionPublic}>(){
+            if redeemableItem.isInstance(Type<@NonFungibleToken.NFT>()) && receiver.check<&{NonFungibleToken.Receiver}>(){
                 let target = receiver.borrow<&{NonFungibleToken.CollectionPublic}>()!
                 let token <- redeemableItem  as! @NonFungibleToken.NFT
                 self.redeemed = true
@@ -113,16 +113,11 @@ pub contract LostAndFound {
         }
     }
 
-    pub resource interface BinPublic {
-        pub fun borrowTicket(id: UInt64): &LostAndFound.Ticket
-        pub fun getTicketIDs(): [UInt64]
-        pub fun destroyTicket(ticketID: UInt64)
-    }
 
     // A Bin is a resource that gathers tickets whos item have the same type.
     // For instance, if two TopShot Moments are deposited to the same redeemer, only one bin
     // will be made which will contain both tickets to redeem each individual moment.
-    pub resource Bin: BinPublic {
+    pub resource Bin {
         access(contract) let tickets: @{UInt64:Ticket}
         access(contract) let type: Type
 
@@ -152,9 +147,9 @@ pub contract LostAndFound {
             return self.tickets.keys
         }
 
-        pub fun destroyTicket(ticketID: UInt64) {
+        access(contract) fun withdrawTicket(ticketID: UInt64): @LostAndFound.Ticket {
             let ticket <- self.tickets.remove(key: ticketID)
-            destroy ticket
+            return <- ticket!
         }
 
         destroy () {
@@ -166,7 +161,7 @@ pub contract LostAndFound {
     // It groups bins by type to help make discovery of the assets that a
     // redeeming address can claim. 
     pub resource Shelf {
-        access(self) let bins: @{String: Bin}
+        access(self) let bins: @{String: Bin}   //TODO: soon Type can be used as key, get rid of identifierToType
         access(self) let identifierToType: {String: Type}
         access(self) let redeemer: Address
 
@@ -180,7 +175,7 @@ pub contract LostAndFound {
             return self.owner!.address
         }
 
-        pub fun getRedeemableTypes(): [Type] {
+        pub fun getRedeemableTypes(): [Type] { 
             let types: [Type] = []
             for k in self.bins.keys {
                 let t = self.identifierToType[k]
@@ -188,7 +183,6 @@ pub contract LostAndFound {
                     types.append(t!)
                 }
             }
-
             return types
         }
 
@@ -215,6 +209,7 @@ pub contract LostAndFound {
             let binPublic = self.borrowBin(type: type)!
             binPublic.deposit(ticket: <-ticket)
         }
+
 
         // Redeem all the tickets of a given type. This is just a convenience function
         // so that a redeemer doesn't have to coordinate redeeming each ticket individually
@@ -252,15 +247,9 @@ pub contract LostAndFound {
         access(self) fun _redeemTicket(type: Type, ticketID: UInt64, receiver: Capability, 
         ) {
             let binPublic = self.borrowBin(type: type)!
-            let ticket = binPublic.borrowTicket(id: ticketID)
-           
-           // if ticket.getType() == Type<@LostAndFound.DummyResource>() {
-           //     binPublic.destroyTicket(ticketID: ticketID)
-           //     return 
-           // }
-
+            let ticket <- binPublic.withdrawTicket(ticketID: ticketID)
             ticket.withdraw(receiver: receiver)
-            binPublic.destroyTicket(ticketID: ticketID)
+            destroy ticket
         }
 
         destroy () {
@@ -285,8 +274,8 @@ pub contract LostAndFound {
 
             let ticket <- create Ticket(item: <-item, memo: memo, redeemer: redeemer)
 
-            let shelfPublic = self.borrowShelf(redeemer: redeemer)
-            shelfPublic.deposit(ticket: <-ticket)
+            let shelf = self.borrowShelf(redeemer: redeemer)
+            shelf.deposit(ticket: <-ticket)
         }
 
         pub fun borrowShelf(redeemer: Address): &LostAndFound.Shelf {
@@ -298,7 +287,7 @@ pub contract LostAndFound {
         }
     }
 
-    pub fun borrowShelfManagerPublic(): &LostAndFound.ShelfManager {
+    pub fun borrowShelfManager(): &LostAndFound.ShelfManager {
         return self.account.getCapability<&LostAndFound.ShelfManager>(LostAndFound.LostAndFoundPublicPath).borrow()!
     }
 
