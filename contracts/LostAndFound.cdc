@@ -73,12 +73,7 @@ pub contract LostAndFound {
 
             self.redeemed = false
         }
-
-        // used when an item is withdrawn, ensures that the ticket is only redeemed one time
-        access(contract) fun setIsRedeemed() {
-            self.redeemed = true
-        }
-        
+    
         pub fun getRedeemer(): Address {
             return self.redeemer
         }
@@ -112,7 +107,7 @@ pub contract LostAndFound {
             if redeemableItem.isInstance(Type<@NonFungibleToken.NFT>()) && receiver.check<&{NonFungibleToken.CollectionPublic}>(){
                 let target = receiver.borrow<&{NonFungibleToken.CollectionPublic}>()!
                 let token <- redeemableItem  as! @NonFungibleToken.NFT
-                self.setIsRedeemed()
+                self.redeemed = true
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
                 target.deposit(token: <- token)
                 return
@@ -120,14 +115,14 @@ pub contract LostAndFound {
             else if redeemableItem.isInstance(Type<@FungibleToken.Vault>()) && receiver.check<&{FungibleToken.Receiver}>(){
                 let target = receiver.borrow<&{FungibleToken.Receiver}>()!
                 let token <- redeemableItem as! @FungibleToken.Vault
-                self.setIsRedeemed()
+                self.redeemed = true
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
                 target.deposit(from: <- token)
                 return
             }    
             else if receiver.check<&{LostAndFound.AnyResourceReceiver}>(){
                 let target = receiver.borrow<&{LostAndFound.AnyResourceReceiver}>()!
-                self.setIsRedeemed()
+                self.redeemed = true
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: redeemableItem.getType())
                 target.deposit(resource: <- redeemableItem)
                 return
