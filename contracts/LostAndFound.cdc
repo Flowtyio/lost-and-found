@@ -116,8 +116,7 @@ pub contract LostAndFound {
                 target.deposit(token: <- token)
                 return
             }    
-
-            if redeemableItem.isInstance(Type<@FungibleToken.Vault>()) && receiver.check<&{FungibleToken.Receiver}>(){
+            else if redeemableItem.isInstance(Type<@FungibleToken.Vault>()) && receiver.check<&{FungibleToken.Receiver}>(){
                 let target = receiver.borrow<&{FungibleToken.Receiver}>()!
                 let token <- redeemableItem as! @FungibleToken.Vault
                 self.setIsRedeemed()
@@ -125,18 +124,16 @@ pub contract LostAndFound {
                 target.deposit(from: <- token)
                 return
             }    
-
-            if receiver.check<&{LostAndFound.AnyResourceReceiver}>(){
+            else if receiver.check<&{LostAndFound.AnyResourceReceiver}>(){
                 let target = receiver.borrow<&{LostAndFound.AnyResourceReceiver}>()!
                 self.setIsRedeemed()
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
                 target.deposit(resource: <- redeemableItem)
                 return
+            }
+            else{
+                panic("cannot redeem resource to receiver")
             }    
-
-            var dummy <- self.item <- redeemableItem
-            destroy dummy
-            panic("cannot redeem resource to receiver")
 
         }
             
