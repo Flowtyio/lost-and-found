@@ -33,12 +33,6 @@ pub contract LostAndFound {
         pub fun deposit(resource: @AnyResource)
     }
 
-    // Empty resource so we can unwrap ticket items for deposits to their corresponding receiver.
-    pub resource DummyResource {
-        init() { }
-    }
-
-    
     // Tickets are the resource that hold items to be redeemed. They carry with them:
     // - item: The Resource which has been deposited to be withdrawn/redeemed
     // - memo: An optional message to attach to this ticket
@@ -77,7 +71,7 @@ pub contract LostAndFound {
             pre {
                 receiver.address == self.redeemer: "receiver address and redeemer must match"
             }
-            
+
             var redeemableItem <- self.item <- nil
             
             if redeemableItem.isInstance(Type<@NonFungibleToken.NFT>()) && receiver.check<&{NonFungibleToken.CollectionPublic}>(){
