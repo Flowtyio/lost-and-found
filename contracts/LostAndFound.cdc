@@ -268,13 +268,8 @@ pub contract LostAndFound {
         }
     }
 
-    pub resource interface ShelfManagerPublic {
-        pub fun deposit(redeemer: Address, item: @AnyResource, memo: String?)
-        pub fun borrowShelf(redeemer: Address): &LostAndFound.Shelf
-    }
-
     // ShelfManager is a light-weight wrapper to get our shelves into storage.
-    pub resource ShelfManager: ShelfManagerPublic {
+    pub resource ShelfManager {
         access(self) let shelves: @{Address: Shelf}
 
         init() {
@@ -303,8 +298,8 @@ pub contract LostAndFound {
         }
     }
 
-    pub fun borrowShelfManagerPublic(): &LostAndFound.ShelfManager{LostAndFound.ShelfManagerPublic} {
-        return self.account.getCapability<&LostAndFound.ShelfManager{LostAndFound.ShelfManagerPublic}>(LostAndFound.LostAndFoundPublicPath).borrow()!
+    pub fun borrowShelfManagerPublic(): &LostAndFound.ShelfManager {
+        return self.account.getCapability<&LostAndFound.ShelfManager>(LostAndFound.LostAndFoundPublicPath).borrow()!
     }
 
     init() {
@@ -313,6 +308,6 @@ pub contract LostAndFound {
 
         let manager <- create ShelfManager()
         self.account.save(<-manager, to: self.LostAndFoundStoragePath)
-        self.account.link<&LostAndFound.ShelfManager{LostAndFound.ShelfManagerPublic}>(self.LostAndFoundPublicPath, target: self.LostAndFoundStoragePath)
+        self.account.link<&LostAndFound.ShelfManager>(self.LostAndFoundPublicPath, target: self.LostAndFoundStoragePath)
     }
 }
