@@ -264,9 +264,7 @@ pub contract LostAndFound {
                 let oldValue <- self.shelves.insert(key: redeemer, <- create Shelf(redeemer: redeemer))
                 destroy oldValue
             }
-
             let ticket <- create Ticket(item: <-item, memo: memo, redeemer: redeemer)
-
             let shelf = self.borrowShelf(redeemer: redeemer)
             shelf.deposit(ticket: <-ticket)
         }
