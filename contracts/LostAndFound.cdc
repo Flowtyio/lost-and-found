@@ -38,35 +38,19 @@ pub contract LostAndFound {
         init() { }
     }
 
-    // TicketPublic - Helper functions to redeem tickets and get information about them
-    pub resource interface TicketPublic {
-        // Borrow the underlying item in a ticket
-        pub fun borrowItem(): &AnyResource?
-        // Return the address that is approved to redeem this ticket
-        pub fun getRedeemer(): Address
-        // A ticket can onlyl be redeemed once
-        pub fun isRedeemed(): Bool
-        // Cast this ticket's item into NonFungibleToken.NFT and deposit it into an NFT Receiver
-        pub fun withdrawToNFTReceiver(receiver: Capability<&{NonFungibleToken.CollectionPublic}>)
-        // Cast this ticket's item into FungibleToken.Vault and deposit it into an FungibleToken Receiver
-        pub fun withdrawToFTReceiver(receiver: Capability<&{FungibleToken.Receiver}>)
-        // Deposit the ticker's item as it into a receiver that accepts AnyResource
-        pub fun withdrawToAnyResourceReceiver(receiver: Capability<&{LostAndFound.AnyResourceReceiver}>)
-    }
-
+    
     // Tickets are the resource that hold items to be redeemed. They carry with them:
     // - item: The Resource which has been deposited to be withdrawn/redeemed
     // - memo: An optional message to attach to this ticket
     // - redeemer: The address which is allowed to withdraw the item from this ticket
     // - redeemed: Whether the ticket has been redeemed. This can only be set by the LostAndFound contract
-    pub resource Ticket: TicketPublic {
+    pub resource Ticket {
         // The item to be redeemed
-        pub var item: @AnyResource
+        access(contract) var item: @AnyResource?
         // An optional message to attach to this item.
         pub let memo: String?
         // The address that it allowed to withdraw the item fromt this ticket
         pub let redeemer: Address
-
         // State maintained by LostAndFound
         pub var redeemed: Bool
 
@@ -74,85 +58,61 @@ pub contract LostAndFound {
             self.item <- item
             self.memo = memo
             self.redeemer = redeemer
-
             self.redeemed = false
         }
 
-        // used when an item is withdrawn, ensures that the ticket is only redeemed one time
-        access(contract) fun setIsRedeemed() {
-            self.redeemed = true
-        }
-        
-        pub fun getRedeemer(): Address {
-            return self.redeemer
-        }
-
-        pub fun borrowItem(): &AnyResource? {            
-            if self.item == nil {
+        pub fun borrowItem(): &AnyResource? {                
+            if self.item == nil  {
                 return nil
             }
+
+            var currentItem: @AnyResource <- self.item <- nil
+            var ref = &currentItem as &AnyResource
+            var dummy <- self.item <- currentItem
+            destroy dummy
+            return ref
+        }
+
+        pub fun withdraw(receiver: Capability) {
+            pre {
+                receiver.address == self.redeemer: "receiver address and redeemer must match"
+            }
             
-            return &self.item as! &AnyResource
-        }
-
-        pub fun isRedeemed(): Bool {
-            return self.redeemed
-        }
-
-
-        pub fun withdrawToNFTReceiver(receiver: Capability<&{NonFungibleToken.CollectionPublic}>) {
-            pre {
-                receiver.address == self.redeemer: "receiver address and redeemer must match"
-                receiver.check(): "receiver check failed"
-            }
-
-
-            // Indiana Jones swap the item in our ticket so we can deposit it
-            var redeemableItem <- create LostAndFound.DummyResource() as @AnyResource
-            redeemableItem <-> self.item
+            var redeemableItem <- self.item <- nil
             
-            emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: redeemableItem.getType())
-            let token <- redeemableItem as! @NonFungibleToken.NFT
-            receiver.borrow()!.deposit(token: <- token)
-            self.setIsRedeemed()
-        }
-
-        pub fun withdrawToFTReceiver(receiver: Capability<&{FungibleToken.Receiver}>) {
-            pre {
-                receiver.address == self.redeemer: "receiver address and redeemer must match"
-                receiver.check(): "receiver check failed"
+            if redeemableItem.isInstance(Type<@NonFungibleToken.NFT>()) && receiver.check<&{NonFungibleToken.CollectionPublic}>(){
+                let target = receiver.borrow<&{NonFungibleToken.CollectionPublic}>()!
+                let token <- redeemableItem  as! @NonFungibleToken.NFT
+                self.redeemed = true
+                emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
+                target.deposit(token: <- token)
+                return
+            }    
+            else if redeemableItem.isInstance(Type<@FungibleToken.Vault>()) && receiver.check<&{FungibleToken.Receiver}>(){
+                let target = receiver.borrow<&{FungibleToken.Receiver}>()!
+                let token <- redeemableItem as! @FungibleToken.Vault
+                self.redeemed = true
+                emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
+                target.deposit(from: <- token)
+                return
+            }    
+            else if receiver.check<&{LostAndFound.AnyResourceReceiver}>(){
+                let target = receiver.borrow<&{LostAndFound.AnyResourceReceiver}>()!
+                self.redeemed = true
+                emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: redeemableItem.getType())
+                target.deposit(resource: <- redeemableItem)
+                return
             }
-
-            // Indiana Jones swap the item in our ticket so we can deposit it
-            var redeemableItem <- create LostAndFound.DummyResource() as @AnyResource
-            redeemableItem <-> self.item
-
-            emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: redeemableItem.getType())
-            let token <- redeemableItem as! @FungibleToken.Vault
-            receiver.borrow()!.deposit(from: <-token)
-            self.setIsRedeemed()
+            else{
+                panic("cannot redeem resource to receiver")
+            }    
         }
-
-        pub fun withdrawToAnyResourceReceiver(receiver: Capability<&{LostAndFound.AnyResourceReceiver}>) {
-            pre {
-                receiver.address == self.redeemer: "receiver address and redeemer must match"
-                receiver.check(): "receiver check failed"
-            }
-
-            // Indiana Jones swap the item in our ticket so we can deposit it
-            var redeemableItem <- create LostAndFound.DummyResource() as @AnyResource
-            redeemableItem <-> self.item
-
-            emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: redeemableItem.getType())
-            receiver.borrow()!.deposit(resource: <-redeemableItem)
-            self.setIsRedeemed()
-        }
-
-        // destricton is only allowed if the ticket has been redeemed and the underlying item is a our dummy resource
+       
+        // destructon is only allowed if the ticket has been redeemed and the underlying item is a our dummy resource
         destroy () {
             pre {
                 self.redeemed: "Ticket has not been redeemed"
-                self.item.isInstance(Type<@LostAndFound.DummyResource>()): "can only destroy if dummy resource"
+                self.item==nil: "can only destroy if not holding any item"
             }
 
             destroy <-self.item
@@ -168,7 +128,7 @@ pub contract LostAndFound {
     // A Bin is a resource that gathers tickets whos item have the same type.
     // For instance, if two TopShot Moments are deposited to the same redeemer, only one bin
     // will be made which will contain both tickets to redeem each individual moment.
-    pub resource Bin {
+    pub resource Bin: BinPublic {
         pub let tickets: @{UInt64:Ticket}
         pub let type: Type
 
