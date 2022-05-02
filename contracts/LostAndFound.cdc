@@ -228,7 +228,7 @@ pub contract LostAndFound {
                     return 
                 }
 
-                self._redeemTicket(type: type, ticketID: key, receiver: receiver)
+                self.redeem(type: type, ticketID: key, receiver: receiver)
                 count = count + 1
             }
         }
@@ -239,19 +239,12 @@ pub contract LostAndFound {
                 receiver == nil || receiver!.address == self.redeemer: "receiver must match the redeemer of this shelf"
                 self.bins.containsKey(type.identifier): "no bin for provided type"
             }
-            self._redeemTicket(type: type, ticketID: ticketID, receiver: receiver)
-        }
-
-
-        // the internal redmption mechanic to join together the two different ways of redeeming (all of them or by ticketID)
-        access(self) fun _redeemTicket(type: Type, ticketID: UInt64, receiver: Capability, 
-        ) {
-            let binPublic = self.borrowBin(type: type)!
-            let ticket <- binPublic.withdrawTicket(ticketID: ticketID)
+            let bin = self.borrowBin(type: type)!
+            let ticket <- bin.withdrawTicket(ticketID: ticketID)
             ticket.withdraw(receiver: receiver)
             destroy ticket
         }
-
+   
         destroy () {
             destroy <- self.bins
         }
