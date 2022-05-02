@@ -168,7 +168,7 @@ pub contract LostAndFound {
     // A Bin is a resource that gathers tickets whos item have the same type.
     // For instance, if two TopShot Moments are deposited to the same redeemer, only one bin
     // will be made which will contain both tickets to redeem each individual moment.
-    pub resource Bin {
+    pub resource Bin: BinPublic {
         pub let tickets: @{UInt64:Ticket}
         pub let type: Type
 
