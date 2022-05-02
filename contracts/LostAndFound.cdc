@@ -90,7 +90,12 @@ pub contract LostAndFound {
         pub fun borrowItem(): &AnyResource? {            
             
             if self.item != nil  {
-                return &self.item as &AnyResource?
+                var currentItem: @AnyResource <- self.item <- nil
+                var ref = &currentItem as &AnyResource
+                var dummy <- self.item <- currentItem
+                destroy dummy
+                return ref
+               // return &self.item as &AnyResource?  // TODO: secure cadence supports optional references 
             }
             
             return nil
@@ -136,7 +141,6 @@ pub contract LostAndFound {
             }    
 
         }
-            
        
         // destructon is only allowed if the ticket has been redeemed and the underlying item is a our dummy resource
         destroy () {
