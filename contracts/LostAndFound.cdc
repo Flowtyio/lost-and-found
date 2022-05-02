@@ -62,7 +62,6 @@ pub contract LostAndFound {
         pub let memo: String?
         // The address that it allowed to withdraw the item fromt this ticket
         pub let redeemer: Address
-
         // State maintained by LostAndFound
         pub var redeemed: Bool
 
@@ -70,16 +69,14 @@ pub contract LostAndFound {
             self.item <- item
             self.memo = memo
             self.redeemer = redeemer
-
             self.redeemed = false
         }
-    
+
         pub fun getRedeemer(): Address {
             return self.redeemer
         }
 
-        pub fun borrowItem(): &AnyResource? {            
-            
+        pub fun borrowItem(): &AnyResource? {                
             if self.item == nil  {
                 return nil
             }
@@ -89,13 +86,11 @@ pub contract LostAndFound {
             var dummy <- self.item <- currentItem
             destroy dummy
             return ref
-
         }
 
         pub fun isRedeemed(): Bool {
             return self.redeemed
         }
-
 
         pub fun withdraw(receiver: Capability) {
             pre {
@@ -130,7 +125,6 @@ pub contract LostAndFound {
             else{
                 panic("cannot redeem resource to receiver")
             }    
-
         }
        
         // destructon is only allowed if the ticket has been redeemed and the underlying item is a our dummy resource
