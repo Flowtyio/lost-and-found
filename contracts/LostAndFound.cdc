@@ -127,7 +127,7 @@ pub contract LostAndFound {
             else if receiver.check<&{LostAndFound.AnyResourceReceiver}>(){
                 let target = receiver.borrow<&{LostAndFound.AnyResourceReceiver}>()!
                 self.setIsRedeemed()
-                emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
+                emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: redeemableItem.getType())
                 target.deposit(resource: <- redeemableItem)
                 return
             }
