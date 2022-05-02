@@ -46,12 +46,8 @@ pub contract LostAndFound {
         pub fun getRedeemer(): Address
         // A ticket can onlyl be redeemed once
         pub fun isRedeemed(): Bool
-        // Cast this ticket's item into NonFungibleToken.NFT and deposit it into an NFT Receiver
-        pub fun withdrawToNFTReceiver(receiver: Capability<&{NonFungibleToken.CollectionPublic}>)
-        // Cast this ticket's item into FungibleToken.Vault and deposit it into an FungibleToken Receiver
-        pub fun withdrawToFTReceiver(receiver: Capability<&{FungibleToken.Receiver}>)
-        // Deposit the ticker's item as it into a receiver that accepts AnyResource
-        pub fun withdrawToAnyResourceReceiver(receiver: Capability<&{LostAndFound.AnyResourceReceiver}>)
+        // Cast this ticket's item to required type and deposit into receiver 
+        pub fun withdraw(receiver: Capability) {
     }
 
     // Tickets are the resource that hold items to be redeemed. They carry with them:
