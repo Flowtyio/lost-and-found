@@ -161,7 +161,8 @@ pub contract LostAndFound {
     // It groups bins by type to help make discovery of the assets that a
     // redeeming address can claim. 
     pub resource Shelf {
-        access(self) let bins: @{String: Bin}   //TODO: soon Type can be used as key, get rid of identifierToType
+        //TODO: soon Type can be used as key, get rid of identifierToType
+        access(self) let bins: @{String: Bin}   
         access(self) let identifierToType: {String: Type}
         access(self) let redeemer: Address
 
@@ -201,13 +202,12 @@ pub contract LostAndFound {
                 // no bin, make a new one and insert it
                 let oldValue <- self.bins.insert(key: type.identifier, <- create Bin(type: type))
                 destroy oldValue
-
                 // add this mapping of type to identifier
                 self.identifierToType[type.identifier] = type
             }
 
-            let binPublic = self.borrowBin(type: type)!
-            binPublic.deposit(ticket: <-ticket)
+            let bin = self.borrowBin(type: type)!
+            bin.deposit(ticket: <-ticket)
         }
 
 
