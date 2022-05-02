@@ -38,26 +38,15 @@ pub contract LostAndFound {
         init() { }
     }
 
-    // TicketPublic - Helper functions to redeem tickets and get information about them
-    pub resource interface TicketPublic {
-        // Borrow the underlying item in a ticket
-        pub fun borrowItem(): &AnyResource?
-        // Return the address that is approved to redeem this ticket
-        pub fun getRedeemer(): Address
-        // A ticket can onlyl be redeemed once
-        pub fun isRedeemed(): Bool
-        // Cast this ticket's item to required type and deposit into receiver 
-        pub fun withdraw(receiver: Capability) {
-    }
-
+    
     // Tickets are the resource that hold items to be redeemed. They carry with them:
     // - item: The Resource which has been deposited to be withdrawn/redeemed
     // - memo: An optional message to attach to this ticket
     // - redeemer: The address which is allowed to withdraw the item from this ticket
     // - redeemed: Whether the ticket has been redeemed. This can only be set by the LostAndFound contract
-    pub resource Ticket: TicketPublic {
+    pub resource Ticket {
         // The item to be redeemed
-        pub var item: @AnyResource?
+        access(contract) var item: @AnyResource?
         // An optional message to attach to this item.
         pub let memo: String?
         // The address that it allowed to withdraw the item fromt this ticket
@@ -72,10 +61,6 @@ pub contract LostAndFound {
             self.redeemed = false
         }
 
-        pub fun getRedeemer(): Address {
-            return self.redeemer
-        }
-
         pub fun borrowItem(): &AnyResource? {                
             if self.item == nil  {
                 return nil
@@ -88,15 +73,11 @@ pub contract LostAndFound {
             return ref
         }
 
-        pub fun isRedeemed(): Bool {
-            return self.redeemed
-        }
-
         pub fun withdraw(receiver: Capability) {
             pre {
                 receiver.address == self.redeemer: "receiver address and redeemer must match"
             }
-
+            
             var redeemableItem <- self.item <- nil
             
             if redeemableItem.isInstance(Type<@NonFungibleToken.NFT>()) && receiver.check<&{NonFungibleToken.CollectionPublic}>(){
