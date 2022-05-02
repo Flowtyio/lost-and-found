@@ -61,7 +61,7 @@ pub contract LostAndFound {
     // - redeemed: Whether the ticket has been redeemed. This can only be set by the LostAndFound contract
     pub resource Ticket: TicketPublic {
         // The item to be redeemed
-        pub var item: @AnyResource
+        pub var item: @AnyResource?
         // An optional message to attach to this item.
         pub let memo: String?
         // The address that it allowed to withdraw the item fromt this ticket
@@ -88,11 +88,12 @@ pub contract LostAndFound {
         }
 
         pub fun borrowItem(): &AnyResource? {            
-            if self.item == nil {
-                return nil
+            
+            if self.item != nil  {
+                return &self.item as &AnyResource?
             }
             
-            return &self.item as! &AnyResource
+            return nil
         }
 
         pub fun isRedeemed(): Bool {
@@ -100,59 +101,51 @@ pub contract LostAndFound {
         }
 
 
-        pub fun withdrawToNFTReceiver(receiver: Capability<&{NonFungibleToken.CollectionPublic}>) {
+        pub fun withdraw(receiver: Capability) {
             pre {
                 receiver.address == self.redeemer: "receiver address and redeemer must match"
-                receiver.check(): "receiver check failed"
             }
 
-
-            // Indiana Jones swap the item in our ticket so we can deposit it
-            var redeemableItem <- create LostAndFound.DummyResource() as @AnyResource
-            redeemableItem <-> self.item
+            var redeemableItem <- self.item <- nil
             
-            emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: redeemableItem.getType())
-            let token <- redeemableItem as! @NonFungibleToken.NFT
-            receiver.borrow()!.deposit(token: <- token)
-            self.setIsRedeemed()
+            if redeemableItem.isInstance(Type<@NonFungibleToken.NFT>()) && receiver.check<&{NonFungibleToken.CollectionPublic}>(){
+                let target = receiver.borrow<&{NonFungibleToken.CollectionPublic}>()!
+                let token <- redeemableItem  as! @NonFungibleToken.NFT
+                self.setIsRedeemed()
+                emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
+                target.deposit(token: <- token)
+                return
+            }    
+
+            if redeemableItem.isInstance(Type<@FungibleToken.Vault>()) && receiver.check<&{FungibleToken.Receiver}>(){
+                let target = receiver.borrow<&{FungibleToken.Receiver}>()!
+                let token <- redeemableItem as! @FungibleToken.Vault
+                self.setIsRedeemed()
+                emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
+                target.deposit(from: <- token)
+                return
+            }    
+
+            if receiver.check<&{LostAndFound.AnyResourceReceiver}>(){
+                let target = receiver.borrow<&{LostAndFound.AnyResourceReceiver}>()!
+                self.setIsRedeemed()
+                emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
+                target.deposit(resource: <- redeemableItem)
+                return
+            }    
+
+            var dummy <- self.item <- redeemableItem
+            destroy dummy
+            panic("cannot redeem resource to receiver")
+
         }
-
-        pub fun withdrawToFTReceiver(receiver: Capability<&{FungibleToken.Receiver}>) {
-            pre {
-                receiver.address == self.redeemer: "receiver address and redeemer must match"
-                receiver.check(): "receiver check failed"
-            }
-
-            // Indiana Jones swap the item in our ticket so we can deposit it
-            var redeemableItem <- create LostAndFound.DummyResource() as @AnyResource
-            redeemableItem <-> self.item
-
-            emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: redeemableItem.getType())
-            let token <- redeemableItem as! @FungibleToken.Vault
-            receiver.borrow()!.deposit(from: <-token)
-            self.setIsRedeemed()
-        }
-
-        pub fun withdrawToAnyResourceReceiver(receiver: Capability<&{LostAndFound.AnyResourceReceiver}>) {
-            pre {
-                receiver.address == self.redeemer: "receiver address and redeemer must match"
-                receiver.check(): "receiver check failed"
-            }
-
-            // Indiana Jones swap the item in our ticket so we can deposit it
-            var redeemableItem <- create LostAndFound.DummyResource() as @AnyResource
-            redeemableItem <-> self.item
-
-            emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: redeemableItem.getType())
-            receiver.borrow()!.deposit(resource: <-redeemableItem)
-            self.setIsRedeemed()
-        }
-
-        // destricton is only allowed if the ticket has been redeemed and the underlying item is a our dummy resource
+            
+       
+        // destructon is only allowed if the ticket has been redeemed and the underlying item is a our dummy resource
         destroy () {
             pre {
                 self.redeemed: "Ticket has not been redeemed"
-                self.item.isInstance(Type<@LostAndFound.DummyResource>()): "can only destroy if dummy resource"
+                self.item==nil: "can only destroy if not holding any item"
             }
 
             destroy <-self.item
