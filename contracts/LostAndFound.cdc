@@ -33,12 +33,6 @@ pub contract LostAndFound {
         pub fun deposit(resource: @AnyResource)
     }
 
-    // Empty resource so we can unwrap ticket items for deposits to their corresponding receiver.
-    pub resource DummyResource {
-        init() { }
-    }
-
-    
     // Tickets are the resource that hold items to be redeemed. They carry with them:
     // - item: The Resource which has been deposited to be withdrawn/redeemed
     // - memo: An optional message to attach to this ticket
@@ -77,10 +71,10 @@ pub contract LostAndFound {
             pre {
                 receiver.address == self.redeemer: "receiver address and redeemer must match"
             }
-            
+
             var redeemableItem <- self.item <- nil
             
-            if redeemableItem.isInstance(Type<@NonFungibleToken.NFT>()) && receiver.check<&{NonFungibleToken.CollectionPublic}>(){
+            if redeemableItem.isInstance(Type<@NonFungibleToken.NFT>()) && receiver.check<&{NonFungibleToken.Receiver}>(){
                 let target = receiver.borrow<&{NonFungibleToken.CollectionPublic}>()!
                 let token <- redeemableItem  as! @NonFungibleToken.NFT
                 self.redeemed = true
@@ -119,26 +113,21 @@ pub contract LostAndFound {
         }
     }
 
-    pub resource interface BinPublic {
-        pub fun borrowTicket(id: UInt64): &LostAndFound.Ticket{LostAndFound.TicketPublic}
-        pub fun getTicketIDs(): [UInt64]
-        pub fun destroyTicket(ticketID: UInt64)
-    }
 
     // A Bin is a resource that gathers tickets whos item have the same type.
     // For instance, if two TopShot Moments are deposited to the same redeemer, only one bin
     // will be made which will contain both tickets to redeem each individual moment.
-    pub resource Bin: BinPublic {
-        pub let tickets: @{UInt64:Ticket}
-        pub let type: Type
+    pub resource Bin {
+        access(contract) let tickets: @{UInt64:Ticket}
+        access(contract) let type: Type
 
         init (type: Type) {
             self.tickets <- {}
             self.type = type
         }
 
-        pub fun borrowTicket(id: UInt64): &LostAndFound.Ticket{LostAndFound.TicketPublic} {
-            return &self.tickets[id] as &LostAndFound.Ticket{LostAndFound.TicketPublic}
+        pub fun borrowTicket(id: UInt64): &LostAndFound.Ticket {
+            return &self.tickets[id] as &LostAndFound.Ticket
         }
 
         // deposit a ticket to this bin. The item type must match this bin's item type.
@@ -147,7 +136,7 @@ pub contract LostAndFound {
                 ticket.item.getType() == self.type: "ticket and bin types must match"
             }
 
-            let redeemer = ticket.getRedeemer()
+            let redeemer = ticket.redeemer
             let ticketID = ticket.uuid
 
             self.tickets[ticket.uuid] <-! ticket
@@ -158,9 +147,9 @@ pub contract LostAndFound {
             return self.tickets.keys
         }
 
-        pub fun destroyTicket(ticketID: UInt64) {
+        access(contract) fun withdrawTicket(ticketID: UInt64): @LostAndFound.Ticket {
             let ticket <- self.tickets.remove(key: ticketID)
-            destroy ticket
+            return <- ticket!
         }
 
         destroy () {
@@ -168,36 +157,14 @@ pub contract LostAndFound {
         }
     }
 
-    pub resource interface ShelfPublic {
-        pub fun getOwner(): Address
-        pub fun getRedeemableTypes(): [Type]
-        pub fun hasType(type: Type): Bool
-        pub fun deposit(ticket: @LostAndFound.Ticket)
-        pub fun borrowBin(type: Type): &LostAndFound.Bin?
-
-        pub fun redeemAll(
-            type: Type,
-            max: Int?,
-            nftReceiver: Capability<&{NonFungibleToken.CollectionPublic}>?, 
-            ftReceiver: Capability<&{FungibleToken.Receiver}>?, 
-            anyResourceReceiver:Capability<&{LostAndFound.AnyResourceReceiver}>?
-        )
-        pub fun redeem(
-            type: Type,
-            ticketID: UInt64,
-            nftReceiver: Capability<&{NonFungibleToken.CollectionPublic}>?, 
-            ftReceiver: Capability<&{FungibleToken.Receiver}>?, 
-            anyResourceReceiver:Capability<&{LostAndFound.AnyResourceReceiver}>?
-        )
-    }
-
     // A shelf is our top-level organization resource.
-    // It groups bins by redeemer to help make discovery of the assets that a
+    // It groups bins by type to help make discovery of the assets that a
     // redeeming address can claim. 
-    pub resource Shelf: ShelfPublic {
-        pub let bins: @{String: Bin}
-        pub let identifierToType: {String: Type}
-        pub let redeemer: Address
+    pub resource Shelf {
+        //TODO: soon Type can be used as key, get rid of identifierToType
+        access(self) let bins: @{String: Bin}   
+        access(self) let identifierToType: {String: Type}
+        access(self) let redeemer: Address
 
         init (redeemer: Address) {
             self.bins <- {}
@@ -209,7 +176,7 @@ pub contract LostAndFound {
             return self.owner!.address
         }
 
-        pub fun getRedeemableTypes(): [Type] {
+        pub fun getRedeemableTypes(): [Type] { 
             let types: [Type] = []
             for k in self.bins.keys {
                 let t = self.identifierToType[k]
@@ -217,7 +184,6 @@ pub contract LostAndFound {
                     types.append(t!)
                 }
             }
-
             return types
         }
 
@@ -236,34 +202,23 @@ pub contract LostAndFound {
                 // no bin, make a new one and insert it
                 let oldValue <- self.bins.insert(key: type.identifier, <- create Bin(type: type))
                 destroy oldValue
-
                 // add this mapping of type to identifier
                 self.identifierToType[type.identifier] = type
             }
 
-            let binPublic = self.borrowBin(type: type)!
-            binPublic.deposit(ticket: <-ticket)
+            let bin = self.borrowBin(type: type)!
+            bin.deposit(ticket: <-ticket)
         }
+
 
         // Redeem all the tickets of a given type. This is just a convenience function
         // so that a redeemer doesn't have to coordinate redeeming each ticket individually
         // Only one of the three receiver options can be specified, and an optional maximum number of tickets
         // to redeem can be picked to prevent gas issues in case there are large numbers of tickets to be
         // redeemed at once.
-        pub fun redeemAll(
-            type: Type,
-            max: Int?,
-            nftReceiver: Capability<&{NonFungibleToken.CollectionPublic}>?, 
-            ftReceiver: Capability<&{FungibleToken.Receiver}>?, 
-            anyResourceReceiver:Capability<&{LostAndFound.AnyResourceReceiver}>?,
-        ) {
+        pub fun redeemAll(type: Type, max: Int?, receiver: Capability) {
             pre {
-                (nftReceiver != nil && ftReceiver == nil && anyResourceReceiver == nil) || 
-                (nftReceiver == nil && ftReceiver != nil && anyResourceReceiver == nil) || 
-                (nftReceiver == nil && ftReceiver == nil && anyResourceReceiver != nil): "Can only provide one receiver"
-                nftReceiver == nil || nftReceiver!.address == self.redeemer: "receiver must match the redeemer of this shelf"
-                ftReceiver == nil || ftReceiver!.address == self.redeemer: "receiver must match the redeemer of this shelf"
-                anyResourceReceiver == nil || anyResourceReceiver!.address == self.redeemer: "receiver must match the redeemer of this shelf"
+                receiver.address == self.redeemer: "receiver must match the redeemer of this shelf"
                 self.bins.containsKey(type.identifier): "no bin for provided type"
             }
 
@@ -273,73 +228,30 @@ pub contract LostAndFound {
                     return 
                 }
 
-                self._redeemTicket(type: type, ticketID: key, nftReceiver: nftReceiver, ftReceiver: ftReceiver, anyResourceReceiver: anyResourceReceiver)
+                self.redeem(type: type, ticketID: key, receiver: receiver)
                 count = count + 1
             }
         }
 
         // Redeem a specific ticket instead of all of a certain type.
-        pub fun redeem(
-            type: Type,
-            ticketID: UInt64,
-            nftReceiver: Capability<&{NonFungibleToken.CollectionPublic}>?, 
-            ftReceiver: Capability<&{FungibleToken.Receiver}>?, 
-            anyResourceReceiver:Capability<&{LostAndFound.AnyResourceReceiver}>?
-        ) {
+        pub fun redeem(type: Type, ticketID: UInt64, receiver: Capability) {
             pre {
-                nftReceiver != nil && ftReceiver == nil && anyResourceReceiver == nil: "Can only provide one receiver"
-                nftReceiver == nil || nftReceiver!.address == self.redeemer: "receiver must match the redeemer of this shelf"
-                ftReceiver == nil || ftReceiver!.address == self.redeemer: "receiver must match the redeemer of this shelf"
-                anyResourceReceiver == nil || anyResourceReceiver!.address == self.redeemer: "receiver must match the redeemer of this shelf"
+                receiver == nil || receiver!.address == self.redeemer: "receiver must match the redeemer of this shelf"
                 self.bins.containsKey(type.identifier): "no bin for provided type"
             }
-            
-            self._redeemTicket(type: type, ticketID: ticketID, nftReceiver: nftReceiver, ftReceiver: ftReceiver, anyResourceReceiver: anyResourceReceiver)
+            let bin = self.borrowBin(type: type)!
+            let ticket <- bin.withdrawTicket(ticketID: ticketID)
+            ticket.withdraw(receiver: receiver)
+            destroy ticket
         }
-
-
-        // the internal redmption mechanic to join together the two different ways of redeeming (all of them or by ticketID)
-        access(self) fun _redeemTicket(
-            type: Type,
-            ticketID: UInt64,
-            nftReceiver: Capability<&{NonFungibleToken.CollectionPublic}>?, 
-            ftReceiver: Capability<&{FungibleToken.Receiver}>?, 
-            anyResourceReceiver:Capability<&{LostAndFound.AnyResourceReceiver}>?
-        ) {
-            let binPublic = self.borrowBin(type: type)!
-            let ticket = binPublic.borrowTicket(id: ticketID)
-            if ticket.getType() == Type<@LostAndFound.DummyResource>() {
-                binPublic.destroyTicket(ticketID: ticketID)
-                return 
-            }
-
-            if nftReceiver != nil {
-                ticket.withdrawToNFTReceiver(receiver: nftReceiver!)
-            }
-            
-            if ftReceiver != nil {
-                ticket.withdrawToFTReceiver(receiver: ftReceiver!)
-            }
-            
-            if anyResourceReceiver != nil {
-                ticket.withdrawToAnyResourceReceiver(receiver: anyResourceReceiver!)
-            }
-
-            binPublic.destroyTicket(ticketID: ticketID)
-        }
-
+   
         destroy () {
             destroy <- self.bins
         }
     }
 
-    pub resource interface ShelfManagerPublic {
-        pub fun deposit(redeemer: Address, item: @AnyResource, memo: String?)
-        pub fun borrowShelf(redeemer: Address): &LostAndFound.Shelf
-    }
-
     // ShelfManager is a light-weight wrapper to get our shelves into storage.
-    pub resource ShelfManager: ShelfManagerPublic {
+    pub resource ShelfManager {
         access(self) let shelves: @{Address: Shelf}
 
         init() {
@@ -352,11 +264,9 @@ pub contract LostAndFound {
                 let oldValue <- self.shelves.insert(key: redeemer, <- create Shelf(redeemer: redeemer))
                 destroy oldValue
             }
-
             let ticket <- create Ticket(item: <-item, memo: memo, redeemer: redeemer)
-
-            let shelfPublic = self.borrowShelf(redeemer: redeemer)
-            shelfPublic.deposit(ticket: <-ticket)
+            let shelf = self.borrowShelf(redeemer: redeemer)
+            shelf.deposit(ticket: <-ticket)
         }
 
         pub fun borrowShelf(redeemer: Address): &LostAndFound.Shelf {
@@ -368,8 +278,8 @@ pub contract LostAndFound {
         }
     }
 
-    pub fun borrowShelfManagerPublic(): &LostAndFound.ShelfManager{LostAndFound.ShelfManagerPublic} {
-        return self.account.getCapability<&LostAndFound.ShelfManager{LostAndFound.ShelfManagerPublic}>(LostAndFound.LostAndFoundPublicPath).borrow()!
+    pub fun borrowShelfManager(): &LostAndFound.ShelfManager {
+        return self.account.getCapability<&LostAndFound.ShelfManager>(LostAndFound.LostAndFoundPublicPath).borrow()!
     }
 
     init() {
@@ -378,6 +288,6 @@ pub contract LostAndFound {
 
         let manager <- create ShelfManager()
         self.account.save(<-manager, to: self.LostAndFoundStoragePath)
-        self.account.link<&LostAndFound.ShelfManager{LostAndFound.ShelfManagerPublic}>(self.LostAndFoundPublicPath, target: self.LostAndFoundStoragePath)
+        self.account.link<&LostAndFound.ShelfManager>(self.LostAndFoundPublicPath, target: self.LostAndFoundStoragePath)
     }
 }
