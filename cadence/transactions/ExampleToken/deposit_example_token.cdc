@@ -14,7 +14,7 @@ transaction(redeemer: Address, amount: UFix64) {
     execute {
         let minter <- self.tokenAdmin.createNewMinter(allowedAmount: amount)
         let mintedVault <- minter.mintTokens(amount: amount)
-        let manager = LostAndFound.borrowShelfManagerPublic()
+        let manager = LostAndFound.borrowShelfManager()
         manager.deposit(redeemer: redeemer, item: <-mintedVault, memo: "hello!")
 
         destroy minter

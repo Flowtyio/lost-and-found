@@ -1,7 +1,7 @@
-import FlowToken from "./standard/FlowToken.cdc"
+import FungibleToken from "./FungibleToken.cdc"
 import FlowStorageFees from "./standard/FlowStorageFees.cdc"
-import FungibleToken from "./standard/FungibleToken.cdc"
-import NonFungibleToken from "./standard/NonFungibleToken.cdc"
+import FlowToken from "./FlowToken.cdc"
+import NonFungibleToken from "./NonFungibleToken.cdc"
 
 // LostAndFound
 // One big problem on the flow blockchain is how to handle accounts that are
@@ -46,13 +46,16 @@ pub contract LostAndFound {
         pub let memo: String?
         // The address that it allowed to withdraw the item fromt this ticket
         pub let redeemer: Address
+        //The type of the resource (non-optional) so that bins can represent the true type of an item
+        pub let type: Type
         // State maintained by LostAndFound
         pub var redeemed: Bool
-        
+
         // flow token amount used to store this ticket is returned when the ticket is redeemed
         access(contract) let flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>?
 
         init (item: @AnyResource, memo: String?, redeemer: Address, flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>?) {
+            self.type = item.getType()
             self.item <- item
             self.memo = memo
             self.redeemer = redeemer
@@ -61,9 +64,17 @@ pub contract LostAndFound {
             self.flowTokenRepayment = flowTokenRepayment
         }
 
-        pub fun borrowItem(): &AnyResource? {                
-            if self.item == nil  {
-                return nil
+        pub fun itemType(): Type {
+            return self.type
+        }
+
+        pub fun checkItem(): Bool {
+            return self.item != nil
+        }
+
+        pub fun borrowItem(): &AnyResource {
+            pre {
+                self.checkItem(): "nil item"
             }
 
             var currentItem: @AnyResource <- self.item <- nil
@@ -79,31 +90,35 @@ pub contract LostAndFound {
             }
 
             var redeemableItem <- self.item <- nil
-            
-            if redeemableItem.isInstance(Type<@NonFungibleToken.NFT>()) && receiver.check<&{NonFungibleToken.Receiver}>(){
+
+            if receiver.check<&{NonFungibleToken.CollectionPublic}>() {
                 let target = receiver.borrow<&{NonFungibleToken.CollectionPublic}>()!
+                let token <- redeemableItem  as! @NonFungibleToken.NFT?
+                self.redeemed = true
+                emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
+                target.deposit(token: <- token!)
+                return
+            } else if receiver.check<&AnyResource{NonFungibleToken.Receiver}>() {
+                let target = receiver.borrow<&AnyResource{NonFungibleToken.Receiver}>()!
                 let token <- redeemableItem  as! @NonFungibleToken.NFT
                 self.redeemed = true
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
                 target.deposit(token: <- token)
                 return
-            }    
-            else if redeemableItem.isInstance(Type<@FungibleToken.Vault>()) && receiver.check<&{FungibleToken.Receiver}>(){
+            } else if receiver.check<&{FungibleToken.Receiver}>(){
                 let target = receiver.borrow<&{FungibleToken.Receiver}>()!
                 let token <- redeemableItem as! @FungibleToken.Vault
                 self.redeemed = true
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
                 target.deposit(from: <- token)
                 return
-            }    
-            else if receiver.check<&{LostAndFound.AnyResourceReceiver}>(){
+            } else if receiver.check<&{LostAndFound.AnyResourceReceiver}>(){
                 let target = receiver.borrow<&{LostAndFound.AnyResourceReceiver}>()!
                 self.redeemed = true
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: redeemableItem.getType())
                 target.deposit(resource: <- redeemableItem)
                 return
-            }
-            else{
+            } else{
                 panic("cannot redeem resource to receiver")
             }    
         }
@@ -139,7 +154,8 @@ pub contract LostAndFound {
         // deposit a ticket to this bin. The item type must match this bin's item type.
         pub fun deposit(ticket: @LostAndFound.Ticket) {
             pre {
-                ticket.item.getType() == self.type: "ticket and bin types must match"
+                ticket.itemType() == self.type: "ticket and bin types must match"
+                ticket.item != nil: "nil item not allowed"
             }
 
             let redeemer = ticket.redeemer
@@ -185,9 +201,9 @@ pub contract LostAndFound {
         pub fun getRedeemableTypes(): [Type] { 
             let types: [Type] = []
             for k in self.bins.keys {
-                let t = self.identifierToType[k]
+                let t = self.identifierToType[k]!
                 if t != nil {
-                    types.append(t!)
+                    types.append(t)
                 }
             }
             return types
@@ -203,7 +219,7 @@ pub contract LostAndFound {
 
         pub fun deposit(ticket: @LostAndFound.Ticket) {
             // is there a bin for this yet?
-            let type = ticket.item.getType()
+            let type = ticket.itemType()
             if !self.bins.containsKey(type.identifier) {
                 // no bin, make a new one and insert it
                 let oldValue <- self.bins.insert(key: type.identifier, <- create Bin(type: type))
@@ -281,10 +297,10 @@ pub contract LostAndFound {
         }
 
         pub fun deposit(
-            redeemer: Address, 
-            item: @AnyResource, 
-            memo: String?, 
-            storagePaymentProvider: Capability<&FlowToken.Vault{FungibleToken.Provider}>, 
+            redeemer: Address,
+            item: @AnyResource,
+            memo: String?,
+            storagePaymentProvider: Capability<&FlowToken.Vault{FungibleToken.Provider}>,
             flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>?
         ) {
             pre {
