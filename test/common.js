@@ -1,9 +1,11 @@
 import path from "path";
-import {deployContractByName, emulator, getAccountAddress, init} from "flow-js-testing";
+import {deployContractByName, emulator, getAccountAddress, init, mintFlow} from "flow-js-testing";
 
 export const ExampleNFT = "ExampleNFTDeployer"
 export const ExampleToken = "ExampleTokenDeployer"
-export let alice, exampleNFTAdmin, exampleTokenAdmin
+export const LostAndFound = "LostAndFound"
+
+export let alice, exampleNFTAdmin, exampleTokenAdmin, lostAndFoundAdmin
 
 export const setup = async () => {
     const basePath = path.resolve(__dirname, "../cadence");
@@ -16,16 +18,21 @@ export const setup = async () => {
     alice = await getAccountAddress("Alice")
     exampleNFTAdmin = await getAccountAddress(ExampleNFT)
     exampleTokenAdmin = await getAccountAddress(ExampleToken)
+    lostAndFoundAdmin = await getAccountAddress(LostAndFound)
 
     await deployContractByName({name: "NonFungibleToken", update: true});
     await deployContractByName({name: "MetadataViews", update: true});
     await deployContractByName({name: "ExampleNFT", to: exampleNFTAdmin, update: true})
-    await deployContractByName({name: "LostAndFound", update: true});
+    await deployContractByName({name: "LostAndFound", to: lostAndFoundAdmin, update: true});
     await deployContractByName({name: "ExampleToken", to: exampleTokenAdmin, update: true})
 }
 
 export const before = async () => {
     await setup()
+    await mintFlow(alice, 1.0)
+    await mintFlow(exampleNFTAdmin, 1.0)
+    await mintFlow(exampleTokenAdmin, 1.0)
+    await mintFlow(lostAndFoundAdmin, 1.0)
 }
 
 export const after = async () => {

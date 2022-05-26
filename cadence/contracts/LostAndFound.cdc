@@ -1,5 +1,5 @@
 import FungibleToken from "./FungibleToken.cdc"
-import FlowStorageFees from "./standard/FlowStorageFees.cdc"
+import FlowStorageFees from "./FlowStorageFees.cdc"
 import FlowToken from "./FlowToken.cdc"
 import NonFungibleToken from "./NonFungibleToken.cdc"
 
@@ -87,25 +87,26 @@ pub contract LostAndFound {
         pub fun withdraw(receiver: Capability) {
             pre {
                 receiver.address == self.redeemer: "receiver address and redeemer must match"
+                !self.redeemed: "already redeemed"
             }
 
             var redeemableItem <- self.item <- nil
 
-            if receiver.check<&{NonFungibleToken.CollectionPublic}>() {
+            if redeemableItem.isInstance(Type<@NonFungibleToken.NFT>()) && receiver.check<&{NonFungibleToken.CollectionPublic}>() {
                 let target = receiver.borrow<&{NonFungibleToken.CollectionPublic}>()!
                 let token <- redeemableItem  as! @NonFungibleToken.NFT?
                 self.redeemed = true
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
                 target.deposit(token: <- token!)
                 return
-            } else if receiver.check<&AnyResource{NonFungibleToken.Receiver}>() {
-                let target = receiver.borrow<&AnyResource{NonFungibleToken.Receiver}>()!
+            } else if redeemableItem.isInstance(Type<@NonFungibleToken.NFT>()) && receiver.check<&{NonFungibleToken.Receiver}>() {
+                let target = receiver.borrow<&{NonFungibleToken.Receiver}>()!
                 let token <- redeemableItem  as! @NonFungibleToken.NFT
                 self.redeemed = true
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
                 target.deposit(token: <- token)
                 return
-            } else if receiver.check<&{FungibleToken.Receiver}>(){
+            } else if redeemableItem.isInstance(Type<@FungibleToken.Vault>()) && receiver.check<&{FungibleToken.Receiver}>(){
                 let target = receiver.borrow<&{FungibleToken.Receiver}>()!
                 let token <- redeemableItem as! @FungibleToken.Vault
                 self.redeemed = true
@@ -349,3 +350,4 @@ pub contract LostAndFound {
         self.account.link<&LostAndFound.ShelfManager>(self.LostAndFoundPublicPath, target: self.LostAndFoundStoragePath)
     }
 }
+ 

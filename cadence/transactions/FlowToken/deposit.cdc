@@ -5,15 +5,10 @@ import ExampleToken from "../../contracts/ExampleToken.cdc"
 import LostAndFound from "../../contracts/LostAndFound.cdc"
 
 transaction(redeemer: Address, amount: UFix64) {
-    let tokenAdmin: &ExampleToken.Administrator
-
     let flowProvider: Capability<&FlowToken.Vault{FungibleToken.Provider}>
     let flowReceiver: Capability<&FlowToken.Vault{FungibleToken.Receiver}>
 
     prepare(acct: AuthAccount) {
-        self.tokenAdmin = acct.borrow<&ExampleToken.Administrator>(from: /storage/exampleTokenAdmin)
-            ?? panic("acct is not the token admin")
-
         let flowTokenProviderPath = /private/flowTokenLostAndFoundProviderPath
 
         if !acct.getCapability<&FlowToken.Vault{FungibleToken.Provider}>(flowTokenProviderPath).check() {
@@ -29,17 +24,15 @@ transaction(redeemer: Address, amount: UFix64) {
     }
 
     execute {
-        let minter <- self.tokenAdmin.createNewMinter(allowedAmount: amount)
-        let mintedVault <- minter.mintTokens(amount: amount)
+        let flowVault <- self.flowProvider.borrow()!.withdraw(amount: 1.0)
+
         let manager = LostAndFound.borrowShelfManager()
         manager.deposit(
             redeemer: redeemer,
-            item: <-mintedVault,
+            item: <-flowVault,
             memo: "hello!",
             storagePaymentProvider: self.flowProvider,
             flowTokenRepayment: self.flowReceiver
         )
-
-        destroy minter
     }
 }
