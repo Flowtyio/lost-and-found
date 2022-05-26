@@ -1,7 +1,8 @@
-import ExampleToken from 0xf8d6e0586b0a20c7
-import FungibleToken from 0xee82856bf20e2aa6
+import FlowToken from "../../contracts/FlowToken.cdc"
+import FungibleToken from "../../contracts/FungibleToken.cdc"
+import ExampleToken from "../../contracts/ExampleToken.cdc"
 
-import LostAndFound from 0x179b6b1cb6755e31
+import LostAndFound from "../../contracts/LostAndFound.cdc"
 
 transaction() {
     let receiver: Capability<&{FungibleToken.Receiver}>
@@ -31,9 +32,9 @@ transaction() {
     }
 
     execute {
-        let shelfManager = LostAndFound.borrowShelfManagerPublic()
+        let shelfManager = LostAndFound.borrowShelfManager()
         let shelf = shelfManager.borrowShelf(redeemer: self.redeemer)
-        shelf.redeemAll(type: Type<@ExampleToken.Vault>(), max: nil, nftReceiver: nil, ftReceiver: self.receiver, anyResourceReceiver: nil)
+        shelf.redeemAll(type: Type<@ExampleToken.Vault>(), max: nil, receiver: self.receiver)
     }
 }
  

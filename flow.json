@@ -1,80 +1,80 @@
 {
-	"emulators": {
-		"default": {
-			"port": 3569,
-			"serviceAccount": "emulator-account"
-		}
-	},
-	"contracts": {
-		"LostAndFound": "./contracts/LostAndFound.cdc",
-		"ExampleNFT": "./contracts/standard/ExampleNFT.cdc",
-		"ExampleToken": "./contracts/standard/ExampleToken.cdc",
-		"MetadataViews": "./contracts/standard/MetadataViews.cdc",
-		"NonFungibleToken": {
-			"source": "./contracts/standard/NonFungibleToken.cdc",
-			"aliases": {
-				"emulator": "0xf8d6e0586b0a20c7"
-			}
-		},
-		"FungibleToken": {
-			"source": "./contracts/standard/FungibleToken.cdc",
-			"aliases": {
-				"emulator": "0xee82856bf20e2aa6"
-			}
-		},
-		"FlowToken": {
-			"source": "./contracts/standard/FlowToken.cdc",
-			"aliases": {
-				"emulator": "0x0ae53cb6e3f42a79"
-			}
-		},
-		"FlowStorageFees": {
-			"source": "./contracts/standard/FlowStorageFees.cdc",
-			"aliases": {
-				"emulator": "0xf8d6e0586b0a20c7"
-			}
-		}
-	},
-	"networks": {
-		"emulator": "127.0.0.1:3569"
-	},
-	"accounts": {
-		"emulator-account": {
-			"address": "f8d6e0586b0a20c7",
-			"key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
-		},
-		"emulator-lostandfound": {
-			"address": "179b6b1cb6755e31",
-			"key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
-		},
-		"emulator-sender": {
-			"address": "01cf0e2f2f715450",
-			"key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
-		},
-		"emulator-receiver": {
-			"address": "f3fcd2c1a78f5eee",
-			"key": "3ed753c78b4d88f8bc69584880e040a369964a7961293c6983618483ae4b1894"
-		}
-	},
-	"deployments": {
-		"emulator": {
-			"emulator-account": [
-				"NonFungibleToken",
-				"MetadataViews",
-				"ExampleNFT",
-				"ExampleToken"
-			],
-			"emulator-lostandfound": [
-				"LostAndFound"
-			],
-			"emulator-sender": [],
-			"emulator-receiver": []
-		}
-	},
-	"emulatorAccounts": {
-		"emulator-account": "f8d6e0586b0a20c7",
-		"emulator-lostandfound": "179b6b1cb6755e31",
-		"emulator-sender": "01cf0e2f2f715450",
-		"emulator-receiver": "f3fcd2c1a78f5eee"
+  "emulators": {
+	"default": {
+	  "port": 3569,
+	  "serviceAccount": "emulator-account"
+	}
+  },
+  "contracts": {
+	"LostAndFound": "./cadence/contracts/LostAndFound.cdc",
+	"ExampleNFT": "./cadence/contracts/ExampleNFT.cdc",
+	"ExampleToken": "./cadence/contracts/ExampleToken.cdc",
+	"MetadataViews": "./cadence/contracts/MetadataViews.cdc",
+	"NonFungibleToken": {
+	  "source": "./cadence/contracts/NonFungibleToken.cdc",
+	  "aliases": {
+		"emulator": "0xf8d6e0586b0a20c7"
 	  }
+	},
+	"FungibleToken": {
+	  "source": "./cadence/contracts/FungibleToken.cdc",
+	  "aliases": {
+		"emulator": "0xee82856bf20e2aa6"
+	  }
+	},
+	"FlowToken": {
+	  "source": "./cadence/contracts/FlowToken.cdc",
+	  "aliases": {
+		"emulator": "0x0ae53cb6e3f42a79"
+	  }
+	},
+	"FlowStorageFees": {
+	  "source": "./cadence/contracts/FlowStorageFees.cdc",
+	  "aliases": {
+		"emulator": "0xf8d6e0586b0a20c7"
+	  }
+	}
+  },
+  "networks": {
+	"emulator": "127.0.0.1:3569"
+  },
+  "accounts": {
+	"emulator-account": {
+	  "address": "f8d6e0586b0a20c7",
+	  "key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
+	},
+	"emulator-lostandfound": {
+	  "address": "179b6b1cb6755e31",
+	  "key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
+	},
+	"emulator-sender": {
+	  "address": "01cf0e2f2f715450",
+	  "key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
+	},
+	"emulator-receiver": {
+	  "address": "f3fcd2c1a78f5eee",
+	  "key": "3ed753c78b4d88f8bc69584880e040a369964a7961293c6983618483ae4b1894"
+	}
+  },
+  "deployments": {
+	"emulator": {
+	  "emulator-account": [
+		"NonFungibleToken",
+		"MetadataViews",
+		"ExampleNFT",
+		"ExampleToken"
+	  ],
+	  "emulator-lostandfound": [
+		"LostAndFound"
+	  ],
+	  "emulator-sender": [],
+	  "emulator-receiver": []
+	}
+  },
+  "emulatorAccounts": {
+	"emulator-account": "f8d6e0586b0a20c7",
+	"emulator-lostandfound": "179b6b1cb6755e31",
+	"emulator-sender": "01cf0e2f2f715450",
+	"emulator-receiver": "f3fcd2c1a78f5eee"
+  }
 }

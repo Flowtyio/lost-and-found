@@ -1,0 +1,31 @@
+{
+  "name": "lost-and-found",
+  "version": "1.0.0",
+  "description": "Giving items to users who are not configured for a given resource type is challenging on flow. Many applications have to either not allow users  to receive assets, or they have to come up with their own escrow  solution.",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Flowtyio/lost-and-found.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Flowtyio/lost-and-found/issues"
+  },
+  "homepage": "https://github.com/Flowtyio/lost-and-found#readme",
+  "devDependencies": {
+    "@babel/core": "^7.18.0",
+    "@babel/preset-env": "^7.18.0",
+    "babel-jest": "^28.1.0",
+    "flow-js-testing": "^0.2.3-alpha.6",
+    "jest": "^28.1.0",
+    "jest-environment-node": "^28.1.0"
+  }
+}

@@ -42,7 +42,7 @@ Deposit an item
 import ExampleNFT from 0xf8d6e0586b0a20c7
 import NonFungibleToken from 0xf8d6e0586b0a20c7
 
-import LostAndFound from 0x179b6b1cb6755e31
+import LostAndFound from 0xf669cb8d41ce0c74
 
 transaction(recipient: Address) {
     // local variable for storing the minter reference
@@ -67,7 +67,7 @@ Redeem them all
 import ExampleNFT from 0xf8d6e0586b0a20c7
 import NonFungibleToken from 0xf8d6e0586b0a20c7
 
-import LostAndFound from 0x179b6b1cb6755e31
+import LostAndFound from 0xf669cb8d41ce0c74
 
 transaction() {
     let receiver: Capability<&{NonFungibleToken.CollectionPublic}>
@@ -106,7 +106,7 @@ Deposit a vault
 import FungibleToken from 0xee82856bf20e2aa6
 import ExampleToken from 0xf8d6e0586b0a20c7
 
-import LostAndFound from 0x179b6b1cb6755e31
+import LostAndFound from 0xf669cb8d41ce0c74
 
 transaction(redeemer: Address, amount: UFix64) {
     let tokenAdmin: &ExampleToken.Administrator
@@ -132,7 +132,7 @@ Redeem them
 import ExampleToken from 0xf8d6e0586b0a20c7
 import FungibleToken from 0xee82856bf20e2aa6
 
-import LostAndFound from 0x179b6b1cb6755e31
+import LostAndFound from 0xf669cb8d41ce0c74
 
 transaction() {
     let receiver: Capability<&{FungibleToken.Receiver}>
