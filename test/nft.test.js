@@ -34,17 +34,16 @@ describe("lost-and-found NonFungibleToken tests", () => {
         let result
         [result, err] = await executeScript("get_redeemable_types_for_addr", [alice])
         expect(result.length).toBe(1)
-        expect(result[0]).toBe('A.179b6b1cb6755e31.ExampleNFT.NFT')
+        expect(result[0].typeID).toBe('A.179b6b1cb6755e31.ExampleNFT.NFT')
     })
 
     test("redeem ExampleNFT", async () => {
         await depositExampleNFT(alice)
         const signers = [alice]
-        let [tx, redeemErr] = await sendTransaction({name: "ExampleNFT/redeem_example_nft_all", args: [], signers})
+        let [tx, redeemErr] = await sendTransaction({name: "ExampleNFT/redeem_example_nft_all", args: [], signers, limit: 9999})
         expect(redeemErr).toBe(null)
         let [result, err] = await executeScript("ExampleNFT/get_account_ids", [alice])
         expect(result.length).toBe(1)
         expect(err).toBe(null)
     })
 })
- 

@@ -9,12 +9,12 @@ import {after, alice, before, exampleTokenAdmin} from "./common";
 jest.setTimeout(10000);
 
 describe("lost-and-found FungibleToken tests", () => {
-    const depositExampleToken = async (account) => {
+    const depositExampleToken = async (account, amount) => {
         const exampleTokenAddress = await getContractAddress("ExampleToken")
 
-        const args = [account]
+        const args = [account, amount]
         const signers = [exampleTokenAddress]
-        let [tx, err] = await sendTransaction({name: "ExampleToken/mint_and_deposit", args, signers});
+        let [tx, err] = await sendTransaction({name: "ExampleToken/deposit_example_token", args, signers});
         return [tx, err]
     }
 
@@ -38,7 +38,14 @@ describe("lost-and-found FungibleToken tests", () => {
 
         let result
         [result, err] = await executeScript("get_redeemable_types_for_addr", [alice])
-        expect(result.includes('A.f3fcd2c1a78f5eee.ExampleToken.Vault')).toBe(true)
+        expect(err).toBe(null)
+        let found = false
+        result.forEach(val =>  {
+            if(val.typeID === "A.f3fcd2c1a78f5eee.ExampleToken.Vault") {
+                found = true
+            }
+        })
+        expect(found).toBe(true)
 
         const ticketID = tx.events[2].data.ticketID
         expect(ticketID).toBeGreaterThan(0)
@@ -57,7 +64,7 @@ describe("lost-and-found FungibleToken tests", () => {
     })
 
     test("redeem ExampleToken", async () => {
-        await depositExampleNFT(alice)
+        await depositExampleToken(alice, 100)
         const signers = [alice]
         let [tx, redeemErr] = await sendTransaction({name: "ExampleNFT/redeem_example_nft_all", args: [], signers})
         expect(redeemErr).toBe(null)

@@ -11,7 +11,7 @@ transaction() {
     prepare(acct: AuthAccount) {
         self.redeemer = acct.address
 
-        if !acct.getCapability<&{FungibleToken.Receiver}>(/public/exampleTokenReceiver).check() {
+        if !acct.getCapability<&AnyResource{FungibleToken.Receiver}>(/public/exampleTokenReceiver).check() {
             acct.save(
                 <-ExampleToken.createEmptyVault(),
                 to: /storage/exampleTokenVault
@@ -27,14 +27,13 @@ transaction() {
                 target: /storage/exampleTokenVault
             )
         }
-        
-        self.receiver = acct.getCapability<&{FungibleToken.Receiver}>(/public/exampleTokenReceiver)
+
+        self.receiver = acct.getCapability<&AnyResource{FungibleToken.Receiver}>(/public/exampleTokenReceiver)
     }
 
     execute {
         let shelfManager = LostAndFound.borrowShelfManager()
         let shelf = shelfManager.borrowShelf(redeemer: self.redeemer)
-        shelf.redeemAll(type: Type<@ExampleToken.Vault>(), max: nil, receiver: self.receiver)
+        shelf!.redeemAll(type: Type<@ExampleToken.Vault>(), max: nil, receiver: self.receiver)
     }
 }
- 

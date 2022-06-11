@@ -92,29 +92,22 @@ pub contract LostAndFound {
 
             var redeemableItem <- self.item <- nil
 
-            if redeemableItem.isInstance(Type<@NonFungibleToken.NFT>()) && receiver.check<&{NonFungibleToken.CollectionPublic}>() {
-                let target = receiver.borrow<&{NonFungibleToken.CollectionPublic}>()!
+            if receiver.check<&AnyResource{NonFungibleToken.CollectionPublic}>() {
+                let target = receiver.borrow<&AnyResource{NonFungibleToken.CollectionPublic}>()!
                 let token <- redeemableItem  as! @NonFungibleToken.NFT?
                 self.redeemed = true
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
                 target.deposit(token: <- token!)
                 return
-            } else if redeemableItem.isInstance(Type<@NonFungibleToken.NFT>()) && receiver.check<&{NonFungibleToken.Receiver}>() {
-                let target = receiver.borrow<&{NonFungibleToken.Receiver}>()!
-                let token <- redeemableItem  as! @NonFungibleToken.NFT
-                self.redeemed = true
-                emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
-                target.deposit(token: <- token)
-                return
-            } else if redeemableItem.isInstance(Type<@FungibleToken.Vault>()) && receiver.check<&{FungibleToken.Receiver}>(){
-                let target = receiver.borrow<&{FungibleToken.Receiver}>()!
+            } else if receiver.check<&AnyResource{FungibleToken.Receiver}>(){
+                let target = receiver.borrow<&AnyResource{FungibleToken.Receiver}>()!
                 let token <- redeemableItem as! @FungibleToken.Vault
                 self.redeemed = true
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
                 target.deposit(from: <- token)
                 return
-            } else if receiver.check<&{LostAndFound.AnyResourceReceiver}>(){
-                let target = receiver.borrow<&{LostAndFound.AnyResourceReceiver}>()!
+            } else if receiver.check<&AnyResource{LostAndFound.AnyResourceReceiver}>(){
+                let target = receiver.borrow<&AnyResource{LostAndFound.AnyResourceReceiver}>()!
                 self.redeemed = true
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: redeemableItem.getType())
                 target.deposit(resource: <- redeemableItem)
@@ -148,8 +141,8 @@ pub contract LostAndFound {
             self.type = type
         }
 
-        pub fun borrowTicket(id: UInt64): &LostAndFound.Ticket {
-            return &self.tickets[id] as &LostAndFound.Ticket
+        pub fun borrowTicket(id: UInt64): &LostAndFound.Ticket? {
+            return &self.tickets[id] as &LostAndFound.Ticket?
         }
 
         // deposit a ticket to this bin. The item type must match this bin's item type.
@@ -215,7 +208,7 @@ pub contract LostAndFound {
         }
 
         pub fun borrowBin(type: Type): &LostAndFound.Bin? {
-            return &self.bins[type.identifier] as &LostAndFound.Bin
+            return &self.bins[type.identifier] as &LostAndFound.Bin?
         }
 
         pub fun deposit(ticket: @LostAndFound.Ticket) {
@@ -286,7 +279,7 @@ pub contract LostAndFound {
     }
 
     access(contract) fun getFlowProvider(): &FlowToken.Vault{FungibleToken.Provider} {
-        return self.account.borrow<&FlowToken.Vault{FungibleToken.Provider}>(from: /storage/flowTokenStorage)!
+        return self.account.borrow<&FlowToken.Vault{FungibleToken.Provider}>(from: /storage/flowTokenVault)!
     }
 
     // ShelfManager is a light-weight wrapper to get our shelves into storage.
@@ -318,7 +311,7 @@ pub contract LostAndFound {
             }
             let ticket <- create Ticket(item: <-item, memo: memo, redeemer: redeemer, flowTokenRepayment: flowTokenRepayment)
             let shelf = self.borrowShelf(redeemer: redeemer)
-            shelf.deposit(ticket: <-ticket)
+            shelf!.deposit(ticket: <-ticket)
 
             let balanceAfter = FlowStorageFees.defaultTokenAvailableBalance(LostAndFound.account.address)
             let balanceDiff = balanceBefore - balanceAfter
@@ -328,8 +321,8 @@ pub contract LostAndFound {
                 .deposit(from: <-storagePaymentVault)
         }
 
-        pub fun borrowShelf(redeemer: Address): &LostAndFound.Shelf {
-            return &self.shelves[redeemer] as &LostAndFound.Shelf
+        pub fun borrowShelf(redeemer: Address): &LostAndFound.Shelf? {
+            return &self.shelves[redeemer] as &LostAndFound.Shelf?
         }
 
         destroy () {

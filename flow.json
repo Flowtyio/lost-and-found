@@ -43,17 +43,13 @@
 	  "address": "f8d6e0586b0a20c7",
 	  "key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
 	},
-	"emulator-lostandfound": {
-	  "address": "179b6b1cb6755e31",
-	  "key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
-	},
 	"emulator-sender": {
 	  "address": "01cf0e2f2f715450",
 	  "key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
 	},
 	"emulator-receiver": {
 	  "address": "f3fcd2c1a78f5eee",
-	  "key": "3ed753c78b4d88f8bc69584880e040a369964a7961293c6983618483ae4b1894"
+	  "key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
 	}
   },
   "deployments": {
@@ -62,9 +58,7 @@
 		"NonFungibleToken",
 		"MetadataViews",
 		"ExampleNFT",
-		"ExampleToken"
-	  ],
-	  "emulator-lostandfound": [
+		"ExampleToken",
 		"LostAndFound"
 	  ],
 	  "emulator-sender": [],
@@ -73,7 +67,6 @@
   },
   "emulatorAccounts": {
 	"emulator-account": "f8d6e0586b0a20c7",
-	"emulator-lostandfound": "179b6b1cb6755e31",
 	"emulator-sender": "01cf0e2f2f715450",
 	"emulator-receiver": "f3fcd2c1a78f5eee"
   }

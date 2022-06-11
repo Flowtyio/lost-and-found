@@ -1,8 +1,9 @@
 import FlowToken from 0x0ae53cb6e3f42a79
-import ExampleNFT from 0x179b6b1cb6755e31
+import ExampleNFT from 0xf8d6e0586b0a20c7
 import NonFungibleToken from 0xf8d6e0586b0a20c7
+import FungibleToken from 0xee82856bf20e2aa6
 
-import LostAndFound from 0xf669cb8d41ce0c74
+import LostAndFound from 0xf8d6e0586b0a20c7
 
 transaction(recipient: Address) {
     // local variable for storing the minter reference
@@ -41,4 +42,3 @@ transaction(recipient: Address) {
         )
     }
 }
- 
