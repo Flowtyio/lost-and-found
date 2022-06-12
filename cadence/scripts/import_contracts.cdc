@@ -1,4 +1,4 @@
-import LostAndFound from 0xf669cb8d41ce0c748d6e0586b0a20c7
+import LostAndFound from "../contracts/LostAndFound.cdc"
 
 pub fun main(): Bool {
     return true

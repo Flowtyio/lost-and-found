@@ -1,9 +1,9 @@
-import FlowToken from 0x0ae53cb6e3f42a79
-import ExampleNFT from 0xf8d6e0586b0a20c7
-import NonFungibleToken from 0xf8d6e0586b0a20c7
-import FungibleToken from 0xee82856bf20e2aa6
+import FlowToken from "../../contracts/FlowToken.cdc"
+import FungibleToken from "../../contracts/FungibleToken.cdc"
+import ExampleNFT from "../../contracts/ExampleNFT.cdc"
+import NonFungibleToken from "../../contracts/NonFungibleToken.cdc"
 
-import LostAndFound from 0xf8d6e0586b0a20c7
+import LostAndFound from "../../contracts/LostAndFound.cdc"
 
 transaction(recipient: Address) {
     // local variable for storing the minter reference
