@@ -240,13 +240,19 @@ pub contract LostAndFound {
             }
 
             var count = 0
-            for key in self.borrowBin(type: type)!.getTicketIDs() {
+            let borrowedBin = self.borrowBin(type: type)!
+            for key in borrowedBin.getTicketIDs() {
                 if max != nil && max == count {
                     return
                 }
 
                 self.redeem(type: type, ticketID: key, receiver: receiver)
                 count = count + 1
+            }
+
+            if borrowedBin.getTicketIDs().length == 0 {
+                let bin <-! self.bins.remove(key: type.identifier)
+                destroy bin
             }
         }
 
@@ -259,8 +265,8 @@ pub contract LostAndFound {
 
             let balanceBefore = FlowStorageFees.defaultTokenAvailableBalance(LostAndFound.account.address)
 
-            let bin = self.borrowBin(type: type)!
-            let ticket <- bin.withdrawTicket(ticketID: ticketID)
+            let borrowedBin = self.borrowBin(type: type)!
+            let ticket <- borrowedBin.withdrawTicket(ticketID: ticketID)
             ticket.withdraw(receiver: receiver)
             let refundCap = ticket.flowTokenRepayment
             destroy ticket
@@ -271,6 +277,11 @@ pub contract LostAndFound {
                 let refundProvider = LostAndFound.getFlowProvider()
                 let repaymentVault <- refundProvider.withdraw(amount: balanceDiff)
                 refundCap!.borrow()!.deposit(from: <-repaymentVault)
+            }
+
+            if borrowedBin.getTicketIDs().length == 0 {
+                let bin <-! self.bins.remove(key: type.identifier)
+                destroy bin
             }
         }
 
