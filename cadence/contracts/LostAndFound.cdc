@@ -178,14 +178,11 @@ pub contract LostAndFound {
     // It groups bins by type to help make discovery of the assets that a
     // redeeming address can claim.
     pub resource Shelf {
-        //TODO: soon Type can be used as key, get rid of identifierToType
-        access(self) let bins: @{String: Bin}
-        access(self) let identifierToType: {String: Type}
+        access(self) let bins: @{Type: Bin}
         access(self) let redeemer: Address
 
         init (redeemer: Address) {
             self.bins <- {}
-            self.identifierToType = {}
             self.redeemer = redeemer
         }
 
@@ -194,33 +191,24 @@ pub contract LostAndFound {
         }
 
         pub fun getRedeemableTypes(): [Type] {
-            let types: [Type] = []
-            for k in self.bins.keys {
-                let t = self.identifierToType[k]!
-                if t != nil {
-                    types.append(t)
-                }
-            }
-            return types
+            return self.bins.keys
         }
 
         pub fun hasType(type: Type): Bool {
-            return self.bins[type.identifier] != nil
+            return self.bins[type] != nil
         }
 
         pub fun borrowBin(type: Type): &LostAndFound.Bin? {
-            return &self.bins[type.identifier] as &LostAndFound.Bin?
+            return &self.bins[type] as &LostAndFound.Bin?
         }
 
         pub fun deposit(ticket: @LostAndFound.Ticket) {
             // is there a bin for this yet?
             let type = ticket.itemType()
-            if !self.bins.containsKey(type.identifier) {
+            if !self.bins.containsKey(type) {
                 // no bin, make a new one and insert it
-                let oldValue <- self.bins.insert(key: type.identifier, <- create Bin(type: type))
+                let oldValue <- self.bins.insert(key: type, <- create Bin(type: type))
                 destroy oldValue
-                // add this mapping of type to identifier
-                self.identifierToType[type.identifier] = type
             }
 
             let bin = self.borrowBin(type: type)!
@@ -236,7 +224,7 @@ pub contract LostAndFound {
         pub fun redeemAll(type: Type, max: Int?, receiver: Capability) {
             pre {
                 receiver.address == self.redeemer: "receiver must match the redeemer of this shelf"
-                self.bins.containsKey(type.identifier): "no bin for provided type"
+                self.bins.containsKey(type): "no bin for provided type"
             }
 
             var count = 0
@@ -254,7 +242,7 @@ pub contract LostAndFound {
         pub fun redeem(type: Type, ticketID: UInt64, receiver: Capability) {
             pre {
                 receiver.address == self.redeemer: "receiver must match the redeemer of this shelf"
-                self.bins.containsKey(type.identifier): "no bin for provided type"
+                self.bins.containsKey(type): "no bin for provided type"
             }
 
             let balanceBefore = FlowStorageFees.defaultTokenAvailableBalance(LostAndFound.account.address)
