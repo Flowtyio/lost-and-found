@@ -65,7 +65,7 @@ describe("lost-and-found FungibleToken tests", () => {
         expect(redeemErr).toBe(null)
 
         let [balance, balanceErr] = await executeScript("ExampleToken/get_example_token_balance", [alice])
-        console.log({balance, balanceErr})
+        // TODO: test balance before and after this test
     })
 
     test("redeem ExampleToken", async () => {
@@ -76,16 +76,5 @@ describe("lost-and-found FungibleToken tests", () => {
         let [result, err] = await executeScript("ExampleToken/get_example_token_balance", [alice])
         expect(result.length).toBeGreaterThan(1)
         expect(err).toBe(null)
-    })
-
-    test("redeem FlowToken", async() => {
-        const depositAmount = 100.0
-        await mintFlow(exampleTokenAdmin, depositAmount)
-
-        let [depTx, depErr] = await sendTransaction({name: "FlowToken/deposit", args: [alice, depositAmount], signers: [exampleTokenAdmin]})
-        console.log({depTx, depErr})
-
-        let [redeemTx, redErr] = await sendTransaction({name: "FlowToken/redeem", args: [], signers: [alice]})
-        console.log({redeemTx, redErr})
     })
 })
