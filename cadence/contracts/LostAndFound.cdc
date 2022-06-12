@@ -5,18 +5,18 @@ import NonFungibleToken from "./NonFungibleToken.cdc"
 
 // LostAndFound
 // One big problem on the flow blockchain is how to handle accounts that are
-// not configured to receive assets that you want to send. Currently, 
+// not configured to receive assets that you want to send. Currently,
 // Lots of platforms have to create their own escrow for people to redeem. IF not an
 // escrow, accounts might instead be skipped on things like an airtdrop
 // because they aren't able to reeive the assets they should have gotten.
-// 
+//
 // The LostAndFound is split into a few key components:
 // Ticket  - Tickets contain the resource which can be redeemed by a user. Everything else is organization around them.
 // Bin     - Bins sort tickets by their type. If two ExampleNFT.NFT items are deposited, there would be two tickets made.
 //           Those two tickets would be put in the same Bin because they are the same type
 // Shelf   - Shelves organize bins by address. When a resource is deposited into the LostAndFound, its receiver shelf is
 //           located, then the appropriate bin is picked for the item to go to. If the bin doesn't exist yet, a new one is made.
-// 
+//
 // In order for an account to redeem an item, they have to supply a receiver which matches the address of the ticket's redeemer
 // For ease of use, there are three supported receivers:
 // - NonFunigibleToken.Receiver
@@ -91,29 +91,23 @@ pub contract LostAndFound {
             }
 
             var redeemableItem <- self.item <- nil
+            let cap = receiver.borrow<&AnyResource>()!
 
-            if redeemableItem.isInstance(Type<@NonFungibleToken.NFT>()) && receiver.check<&{NonFungibleToken.CollectionPublic}>() {
-                let target = receiver.borrow<&{NonFungibleToken.CollectionPublic}>()!
+            if cap.isInstance(Type<@NonFungibleToken.Collection>()) {
+                let target = receiver.borrow<&AnyResource{NonFungibleToken.CollectionPublic}>()!
                 let token <- redeemableItem  as! @NonFungibleToken.NFT?
                 self.redeemed = true
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
                 target.deposit(token: <- token!)
                 return
-            } else if redeemableItem.isInstance(Type<@NonFungibleToken.NFT>()) && receiver.check<&{NonFungibleToken.Receiver}>() {
-                let target = receiver.borrow<&{NonFungibleToken.Receiver}>()!
-                let token <- redeemableItem  as! @NonFungibleToken.NFT
+            } else if cap.isInstance(Type<@FungibleToken.Vault>()) {
+                let target = receiver.borrow<&AnyResource{FungibleToken.Receiver}>()!
+                let token <- redeemableItem as! @FungibleToken.Vault?
                 self.redeemed = true
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
-                target.deposit(token: <- token)
+                target.deposit(from: <- token!)
                 return
-            } else if redeemableItem.isInstance(Type<@FungibleToken.Vault>()) && receiver.check<&{FungibleToken.Receiver}>(){
-                let target = receiver.borrow<&{FungibleToken.Receiver}>()!
-                let token <- redeemableItem as! @FungibleToken.Vault
-                self.redeemed = true
-                emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
-                target.deposit(from: <- token)
-                return
-            } else if receiver.check<&{LostAndFound.AnyResourceReceiver}>(){
+            } else if cap.isInstance(Type<@AnyResource{LostAndFound.AnyResourceReceiver}>()) {
                 let target = receiver.borrow<&{LostAndFound.AnyResourceReceiver}>()!
                 self.redeemed = true
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: redeemableItem.getType())
@@ -121,9 +115,9 @@ pub contract LostAndFound {
                 return
             } else{
                 panic("cannot redeem resource to receiver")
-            }    
+            }
         }
-       
+
         // destructon is only allowed if the ticket has been redeemed and the underlying item is a our dummy resource
         destroy () {
             pre {
@@ -148,8 +142,8 @@ pub contract LostAndFound {
             self.type = type
         }
 
-        pub fun borrowTicket(id: UInt64): &LostAndFound.Ticket {
-            return &self.tickets[id] as &LostAndFound.Ticket
+        pub fun borrowTicket(id: UInt64): &LostAndFound.Ticket? {
+            return &self.tickets[id] as &LostAndFound.Ticket?
         }
 
         // deposit a ticket to this bin. The item type must match this bin's item type.
@@ -182,10 +176,10 @@ pub contract LostAndFound {
 
     // A shelf is our top-level organization resource.
     // It groups bins by type to help make discovery of the assets that a
-    // redeeming address can claim. 
+    // redeeming address can claim.
     pub resource Shelf {
         //TODO: soon Type can be used as key, get rid of identifierToType
-        access(self) let bins: @{String: Bin}   
+        access(self) let bins: @{String: Bin}
         access(self) let identifierToType: {String: Type}
         access(self) let redeemer: Address
 
@@ -199,7 +193,7 @@ pub contract LostAndFound {
             return self.owner!.address
         }
 
-        pub fun getRedeemableTypes(): [Type] { 
+        pub fun getRedeemableTypes(): [Type] {
             let types: [Type] = []
             for k in self.bins.keys {
                 let t = self.identifierToType[k]!
@@ -215,7 +209,7 @@ pub contract LostAndFound {
         }
 
         pub fun borrowBin(type: Type): &LostAndFound.Bin? {
-            return &self.bins[type.identifier] as &LostAndFound.Bin
+            return &self.bins[type.identifier] as &LostAndFound.Bin?
         }
 
         pub fun deposit(ticket: @LostAndFound.Ticket) {
@@ -248,7 +242,7 @@ pub contract LostAndFound {
             var count = 0
             for key in self.borrowBin(type: type)!.getTicketIDs() {
                 if max != nil && max == count {
-                    return 
+                    return
                 }
 
                 self.redeem(type: type, ticketID: key, receiver: receiver)
@@ -279,14 +273,14 @@ pub contract LostAndFound {
                 refundCap!.borrow()!.deposit(from: <-repaymentVault)
             }
         }
-   
+
         destroy () {
             destroy <- self.bins
         }
     }
 
     access(contract) fun getFlowProvider(): &FlowToken.Vault{FungibleToken.Provider} {
-        return self.account.borrow<&FlowToken.Vault{FungibleToken.Provider}>(from: /storage/flowTokenStorage)!
+        return self.account.borrow<&FlowToken.Vault{FungibleToken.Provider}>(from: /storage/flowTokenVault)!
     }
 
     // ShelfManager is a light-weight wrapper to get our shelves into storage.
@@ -318,7 +312,7 @@ pub contract LostAndFound {
             }
             let ticket <- create Ticket(item: <-item, memo: memo, redeemer: redeemer, flowTokenRepayment: flowTokenRepayment)
             let shelf = self.borrowShelf(redeemer: redeemer)
-            shelf.deposit(ticket: <-ticket)
+            shelf!.deposit(ticket: <-ticket)
 
             let balanceAfter = FlowStorageFees.defaultTokenAvailableBalance(LostAndFound.account.address)
             let balanceDiff = balanceBefore - balanceAfter
@@ -328,8 +322,8 @@ pub contract LostAndFound {
                 .deposit(from: <-storagePaymentVault)
         }
 
-        pub fun borrowShelf(redeemer: Address): &LostAndFound.Shelf {
-            return &self.shelves[redeemer] as &LostAndFound.Shelf
+        pub fun borrowShelf(redeemer: Address): &LostAndFound.Shelf? {
+            return &self.shelves[redeemer] as &LostAndFound.Shelf?
         }
 
         destroy () {
@@ -350,4 +344,3 @@ pub contract LostAndFound {
         self.account.link<&LostAndFound.ShelfManager>(self.LostAndFoundPublicPath, target: self.LostAndFoundStoragePath)
     }
 }
- 
