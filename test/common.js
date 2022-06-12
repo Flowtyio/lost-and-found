@@ -27,7 +27,7 @@ export const setup = async () => {
     exampleTokenAdmin = await getAccountAddress(ExampleToken)
     lostAndFoundAdmin = await getAccountAddress(LostAndFound)
 
-    await deployContractByName({name: "NonFungibleToken", update: true})
+    console.log(await deployContractByName({name: "NonFungibleToken", update: true}))
     await deployContractByName({name: "MetadataViews", update: true})
     await deployContractByName({name: "ExampleNFT", to: exampleNFTAdmin, update: true})
     await deployContractByName({name: "LostAndFound", to: lostAndFoundAdmin, update: true})
