@@ -3,10 +3,12 @@ import {
     getContractAddress, mintFlow,
     sendTransaction
 } from "flow-js-testing";
-import {after, alice, before, exampleTokenAdmin} from "./common";
+import {after, alice, before, exampleTokenAdmin, getRedeemableTypes} from "./common";
 
 // Increase timeout if your tests failing due to timeout
 jest.setTimeout(10000);
+
+const depositAmount = 1000
 
 describe("lost-and-found FungibleToken tests", () => {
     beforeEach(async () => {
@@ -34,18 +36,17 @@ describe("lost-and-found FungibleToken tests", () => {
     }
 
     test("deposit ExampleToken", async () => {
-        const exampleTokenAddress = await getContractAddress("ExampleToken")
-        const args = [alice, 1000]
-        const signers = [exampleTokenAddress]
+        const args = [alice, depositAmount]
+        const signers = [exampleTokenAdmin]
         let [tx, err] = await sendTransaction({name: "ExampleToken/deposit_example_token", args, signers});
         expect(err).toBe(null)
 
         let result
-        [result, err] = await executeScript("get_redeemable_types_for_addr", [alice])
+        [result, err] = await getRedeemableTypes(alice)
         expect(err).toBe(null)
         let found = false
-        result.forEach(val =>  {
-            if(val.typeID === `A.${exampleTokenAddress.substring(2)}.ExampleToken.Vault`) {
+        result.forEach(val => {
+            if (val.typeID === `A.${exampleTokenAdmin.substring(2)}.ExampleToken.Vault`) {
                 found = true
             }
         })
@@ -55,8 +56,11 @@ describe("lost-and-found FungibleToken tests", () => {
         expect(ticketID).toBeGreaterThan(0)
         let [ticketDetail, ticketDetailErr] = await executeScript("ExampleToken/borrow_ticket", [alice, ticketID])
         expect(ticketDetailErr).toBe(null)
+    })
 
-        let [redeemTx, redeemErr] = await sendTransaction({
+    test("redeem ExampleToken", async () => {
+        await depositExampleToken(alice, depositAmount)
+        let [_, redeemErr] = await sendTransaction({
             name: "ExampleToken/redeem_example_token_all",
             args: [],
             signers: [alice],
@@ -65,16 +69,17 @@ describe("lost-and-found FungibleToken tests", () => {
         expect(redeemErr).toBe(null)
 
         let [balance, balanceErr] = await executeScript("ExampleToken/get_example_token_balance", [alice])
-        // TODO: test balance before and after this test
-    })
+        expect(balanceErr).toBe(null)
+        expect(Number(balance)).toBeGreaterThanOrEqual(depositAmount)
 
-    test("redeem ExampleToken", async () => {
-        await depositExampleToken(alice, 100)
-        const signers = [alice]
-        let [tx, redeemErr] = await sendTransaction({name: "ExampleToken/redeem_example_token_all", args: [], signers})
-        expect(redeemErr).toBe(null)
-        let [result, err] = await executeScript("ExampleToken/get_example_token_balance", [alice])
-        expect(result.length).toBeGreaterThan(1)
-        expect(err).toBe(null)
+        const [redeemableTypes, rtErr] = await getRedeemableTypes(alice)
+        expect(rtErr).toBe(null)
+        let found = false
+        redeemableTypes.forEach(val => {
+            if (val.typeID === `A.${exampleTokenAddress.substring(2)}.ExampleToken.Vault`) {
+                found = true
+            }
+        })
+        expect(found).toBe(false)
     })
 })

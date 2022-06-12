@@ -1,7 +1,7 @@
-import ExampleNFT from 0x179b6b1cb6755e31
-import NonFungibleToken from 0xf8d6e0586b0a20c7
+import ExampleNFT from "../../contracts/ExampleNFT.cdc"
+import NonFungibleToken from "../../contracts/NonFungibleToken.cdc"
 
-import LostAndFound from 0xf669cb8d41ce0c748d6e0586b0a20c7
+import LostAndFound from "../../contracts/LostAndFound.cdc"
 
 pub fun main(addr: Address): Bool {
     let acct = getAccount(addr)

@@ -1,7 +1,7 @@
-import ExampleNFT from 0xf8d6e0586b0a20c7
-import NonFungibleToken from 0xf8d6e0586b0a20c7
+import ExampleNFT from "../../contracts/ExampleNFT.cdc"
+import NonFungibleToken from "../../contracts/NonFungibleToken.cdc"
 
-import LostAndFound from 0xf8d6e0586b0a20c7
+import LostAndFound from "../../contracts/LostAndFound.cdc"
 
 transaction() {
     let receiver: Capability<&{NonFungibleToken.CollectionPublic}>

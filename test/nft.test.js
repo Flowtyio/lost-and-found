@@ -56,5 +56,15 @@ describe("lost-and-found NonFungibleToken tests", () => {
         let [result, err] = await executeScript("ExampleNFT/get_account_ids", [alice])
         expect(result.length).toBe(1)
         expect(err).toBe(null)
+
+        const [redeemableTypes, redeemableTypesErr] = await executeScript("get_redeemable_types_for_addr", [alice])
+        expect(redeemableTypesErr).toBe(null)
+        let found = false
+        redeemableTypes.forEach(val => {
+            if (val.typeID === `A.${exampleNFTAddress.substring(2)}.ExampleNFT.NFT`) {
+                found = true
+            }
+        })
+        expect(found).toBe(false)
     })
 })
