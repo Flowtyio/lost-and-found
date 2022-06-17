@@ -14,7 +14,6 @@ describe("lost-and-found NonFungibleToken tests", () => {
         await before()
     });
 
-    // Stop emulator, so it could be restarted
     afterEach(async () => {
         await after()
     });

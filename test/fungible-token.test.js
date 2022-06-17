@@ -1,6 +1,6 @@
 import {
     executeScript,
-    getContractAddress, mintFlow,
+    getContractAddress,
     sendTransaction
 } from "flow-js-testing";
 import {after, alice, before, exampleTokenAdmin, getRedeemableTypes} from "./common";

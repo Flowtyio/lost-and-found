@@ -6,9 +6,11 @@ import NonFungibleToken from "./NonFungibleToken.cdc"
 // LostAndFound
 // One big problem on the flow blockchain is how to handle accounts that are
 // not configured to receive assets that you want to send. Currently,
-// Lots of platforms have to create their own escrow for people to redeem. IF not an
-// escrow, accounts might instead be skipped on things like an airtdrop
-// because they aren't able to reeive the assets they should have gotten.
+// lots of platforms have to create their own escrow for people to redeem. If not an
+// escrow, accounts might instead be skipped for things like an airtdrop
+// because they aren't able to receive the assets they should have gotten.
+// LostAndFound is meant to solve that problem, giving a central easy to use place to send
+// and redeem items
 //
 // The LostAndFound is split into a few key components:
 // Ticket  - Tickets contain the resource which can be redeemed by a user. Everything else is organization around them.
