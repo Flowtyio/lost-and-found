@@ -28,8 +28,6 @@ transaction() {
     }
 
     execute {
-        let shelfManager = LostAndFound.borrowShelfManager()
-        let shelf = shelfManager.borrowShelf(redeemer: self.redeemer)
-        shelf!.redeemAll(type: Type<@ExampleNFT.NFT>(), max: nil, receiver: self.receiver)
+        LostAndFound.redeemAll(type: Type<@ExampleNFT.NFT>(), max: nil, receiver: self.receiver)
     }
 }
