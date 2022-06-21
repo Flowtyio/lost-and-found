@@ -32,8 +32,6 @@ transaction() {
     }
 
     execute {
-        let shelfManager = LostAndFound.borrowShelfManager()
-        let shelf = shelfManager.borrowShelf(redeemer: self.redeemer)
-        shelf!.redeemAll(type: Type<@ExampleToken.Vault>(), max: nil, receiver: self.receiver)
+        LostAndFound.redeemAll(type: Type<@ExampleToken.Vault>(), max: nil, receiver: self.receiver)
     }
 }

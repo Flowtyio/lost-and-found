@@ -339,6 +339,17 @@ pub contract LostAndFound {
             return &self.shelves[redeemer] as &LostAndFound.Shelf?
         }
 
+        // deleteShelf
+        //
+        // delete a shelf if it has no redeemable types
+        pub fun deleteShelf(_ addr: Address) {
+            assert(self.shelves.containsKey(addr), message: "shelf does not exist")            
+            let shelf <- self.shelves[addr] <- nil
+
+            assert(shelf?.getRedeemableTypes()?.length! == 0, message: "shelf still has redeemable types")
+            destroy shelf
+        }
+
         destroy () {
             destroy <-self.shelves
         }
@@ -346,6 +357,18 @@ pub contract LostAndFound {
 
     pub fun borrowShelfManager(): &LostAndFound.ShelfManager {
         return self.account.getCapability<&LostAndFound.ShelfManager>(LostAndFound.LostAndFoundPublicPath).borrow()!
+    }
+
+    pub fun redeemAll(type: Type, max: Int?, receiver: Capability) {
+        let manager = LostAndFound.borrowShelfManager()
+        let shelf = manager.borrowShelf(redeemer: receiver.address)
+        assert(shelf != nil, message: "shelf not found")
+
+        shelf!.redeemAll(type: type, max: max, receiver: receiver)
+        let remainingTypes = shelf!.getRedeemableTypes()
+        if remainingTypes.length == 0 {
+            manager.deleteShelf(receiver.address)
+        }
     }
 
     init() {
