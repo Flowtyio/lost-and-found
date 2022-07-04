@@ -251,11 +251,6 @@ pub contract LostAndFound {
                 self.redeem(type: type, ticketID: key, receiver: receiver)
                 count = count + 1
             }
-
-            if borrowedBin.getTicketIDs().length == 0 {
-                let bin <-! self.bins.remove(key: type.identifier)
-                destroy bin
-            }
         }
 
         // Redeem a specific ticket instead of all of a certain type.
