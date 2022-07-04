@@ -57,7 +57,7 @@ transaction(recipient: Address) {
 
     execute {
         let token <- self.minter.mintAndReturnNFT(name: "testname", description: "descr", thumbnail: "image.html", royalties: [])
-        LostAndFound.borrowShelfManagerPublic().deposit(redeemer: recipient, item: <-token, memo: "test memo")
+        LostAndFound.deposit(redeemer: recipient, item: <-token, memo: "test memo")
     }
 }
 ```
@@ -93,9 +93,7 @@ transaction() {
     }
 
     execute {
-        let shelfManager = LostAndFound.borrowShelfManagerPublic()
-        let shelf = shelfManager.borrowShelf(redeemer: self.redeemer)
-        shelf.redeemAll(type: Type<@ExampleNFT.NFT>(), max: nil, nftReceiver: self.receiver, ftReceiver: nil, anyResourceReceiver: nil)
+        LostAndFound.redeemAll(type: Type<@ExampleNFT.NFT>(), max: nil, receiver: self.receiver)
     }
 }
 ```
@@ -119,8 +117,7 @@ transaction(redeemer: Address, amount: UFix64) {
     execute {
         let minter <- self.tokenAdmin.createNewMinter(allowedAmount: amount)
         let mintedVault <- minter.mintTokens(amount: amount)
-        let manager = LostAndFound.borrowShelfManagerPublic()
-        manager.deposit(redeemer: redeemer, item: <-mintedVault, memo: "hello!")
+        LostAndFound.deposit(redeemer: redeemer, item: <-mintedVault, memo: "hello!")
 
         destroy minter
     }
@@ -162,9 +159,7 @@ transaction() {
     }
 
     execute {
-        let shelfManager = LostAndFound.borrowShelfManagerPublic()
-        let shelf = shelfManager.borrowShelf(redeemer: self.redeemer)
-        shelf.redeemAll(type: Type<@ExampleToken.Vault>(), max: nil, nftReceiver: nil, ftReceiver: self.receiver, anyResourceReceiver: nil)
+        LostAndFound.redeemAll(type: Type<@ExampleToken.Vault>(), max: nil, receiver: self.receiver)
     }
 }
  
