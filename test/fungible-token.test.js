@@ -3,7 +3,7 @@ import {
     getContractAddress,
     sendTransaction
 } from "flow-js-testing";
-import {after, alice, before, exampleTokenAdmin, getRedeemableTypes} from "./common";
+import {after, alice, before, exampleTokenAdmin, getRedeemableTypes, lostAndFoundAdmin} from "./common";
 
 // Increase timeout if your tests failing due to timeout
 jest.setTimeout(10000);
@@ -76,10 +76,63 @@ describe("lost-and-found FungibleToken tests", () => {
         expect(rtErr).toBe(null)
         let found = false
         redeemableTypes.forEach(val => {
-            if (val.typeID === `A.${exampleTokenAddress.substring(2)}.ExampleToken.Vault`) {
+            if (val.typeID === `A.${exampleTokenAdmin.substring(2)}.ExampleToken.Vault`) {
                 found = true
             }
         })
         expect(found).toBe(false)
+    })
+
+    test("send ExampleToken with setup", async() => {
+        let [_, setupErr] = await sendTransaction({
+            name: "ExampleToken/setup_account_ft",
+            args: [],
+            signers: [alice],
+            limit: 999
+        })
+        expect(setupErr).toBe(null)
+
+        let [balance, balanceErr] = await executeScript("ExampleToken/get_example_token_balance", [alice])
+        expect(balanceErr).toBe(null)
+
+        let [sendRes, sendErr] = await sendTransaction({
+            name: "ExampleToken/try_send_example_token",
+            args: [alice, depositAmount],
+            signers: [exampleTokenAdmin],
+            limit: 9999
+        })
+        expect(sendErr).toBe(null)
+        expect(sendRes.events.length).toBe(3)
+        expect(sendRes.events[2].type).toBe(`A.${exampleTokenAdmin.substring(2)}.ExampleToken.TokensDeposited`)
+        expect(Number(sendRes.events[2].data.amount)).toBe(depositAmount)
+        expect(sendRes.events[2].data.to).toBe(alice)
+
+        let [balanceAfter, balanceAfterErr] = await executeScript("ExampleToken/get_example_token_balance", [alice])
+        expect(balanceAfterErr).toBe(null)
+        expect(Number(balanceAfter)).toBe(depositAmount + Number(balance))
+    })
+
+    test("send ExampleToken without setup", async() => {
+        await sendTransaction({
+            name: "ExampleToken/destroy_example_token_storage",
+            signers: [alice],
+            args: [],
+            limit: 9999
+        })
+
+        let [balance, balanceErr] = await executeScript("ExampleToken/get_example_token_balance", [alice])
+        expect(balanceErr.message.includes("unexpectedly found nil while forcing an Optional value")).toBe(true)
+
+        let [sendRes, sendErr] = await sendTransaction({
+            name: "ExampleToken/try_send_example_token",
+            args: [alice, depositAmount],
+            signers: [exampleTokenAdmin],
+            limit: 9999
+        })
+        expect(sendErr).toBe(null)
+        expect(sendRes.events.length).toBe(5)
+        expect(sendRes.events[2].type).toBe(`A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`)
+        expect(sendRes.events[2].data.type.typeID).toBe(`A.${exampleTokenAdmin.substring(2)}.ExampleToken.Vault`)
+        expect(sendRes.events[2].data.redeemer).toBe(alice)
     })
 })
