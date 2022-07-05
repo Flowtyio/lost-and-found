@@ -366,6 +366,43 @@ pub contract LostAndFound {
         }
     }
 
+    pub fun deposit(
+        redeemer: Address,
+        item: @AnyResource,
+        memo: String?,
+        storagePaymentProvider: Capability<&FlowToken.Vault{FungibleToken.Provider}>,
+        flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>?
+    ) {
+        pre {
+            storagePaymentProvider.check(): "invalid storagePaymentProvider"
+            flowTokenRepayment == nil || flowTokenRepayment!.check(): "flowTokenRepayment is not valid"
+        }
+
+        let shelfManager = LostAndFound.borrowShelfManager()
+        shelfManager.deposit(redeemer: redeemer, item: <-item, memo: memo, storagePaymentProvider: storagePaymentProvider, flowTokenRepayment: flowTokenRepayment)
+    }
+
+    pub fun trySendResource(
+        resource: @AnyResource,
+        cap: Capability,
+        memo: String?,
+        storagePaymentProvider: Capability<&FlowToken.Vault{FungibleToken.Provider}>,
+        flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>?
+    ) {
+        if cap.check<&{NonFungibleToken.CollectionPublic}>() {
+            let nft <- resource as! @NonFungibleToken.NFT
+            cap.borrow<&{NonFungibleToken.CollectionPublic}>()!.deposit(token: <-nft)
+        } else if cap.check<&{NonFungibleToken.Receiver}>() {
+            let nft <- resource as! @NonFungibleToken.NFT
+            cap.borrow<&{NonFungibleToken.Receiver}>()!.deposit(token: <-nft)
+        } else if cap.check<&{FungibleToken.Receiver}>() {
+            let vault <- resource as! @FungibleToken.Vault
+            cap.borrow<&{FungibleToken.Receiver}>()!.deposit(from: <-vault)
+        } else {
+            LostAndFound.deposit(redeemer: cap.address, item: <-resource, memo: memo, storagePaymentProvider: storagePaymentProvider, flowTokenRepayment: flowTokenRepayment)
+        }
+    }
+
     init() {
         self.LostAndFoundPublicPath = /public/lostAndFound
         self.LostAndFoundStoragePath = /storage/lostAndFound

@@ -6,13 +6,20 @@ import {
     getAccountAddress,
     init,
     mintFlow,
+    sendTransaction,
 } from "flow-js-testing";
+
 
 export const ExampleNFT = "ExampleNFTDeployer"
 export const ExampleToken = "ExampleTokenDeployer"
 export const LostAndFound = "LostAndFound"
 
 export let alice, exampleNFTAdmin, exampleTokenAdmin, lostAndFoundAdmin
+
+export const cleanup = async (account) => {
+    await sendTransaction({name: "ExampleToken/destroy_example_token_storage", args: [], signers: [account], limit: 9999})
+    await sendTransaction({name: "ExampleNFT/destroy_example_nft_storage", args: [], signers: [account], limit: 9999})
+}
 
 export const setup = async () => {
     const basePath = path.resolve(__dirname, "../cadence");
@@ -36,6 +43,7 @@ export const setup = async () => {
 
 export const before = async () => {
     await setup()
+    await cleanup(alice)
 
     await mintFlow(alice, 1.0)
     await mintFlow(exampleNFTAdmin, 1.0)

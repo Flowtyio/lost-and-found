@@ -3,7 +3,17 @@ import {
     executeScript,
     sendTransaction
 } from "flow-js-testing";
-import {after, alice, before, delay, ExampleNFT} from "./common";
+import {
+    after,
+    alice,
+    before,
+    cleanup,
+    delay,
+    ExampleNFT,
+    exampleNFTAdmin,
+    exampleTokenAdmin,
+    lostAndFoundAdmin
+} from "./common";
 
 // Increase timeout if your tests failing due to timeout
 jest.setTimeout(10000);
@@ -60,10 +70,58 @@ describe("lost-and-found NonFungibleToken tests", () => {
         expect(redeemableTypesErr).toBe(null)
         let found = false
         redeemableTypes.forEach(val => {
-            if (val.typeID === `A.${exampleNFTAddress.substring(2)}.ExampleNFT.NFT`) {
+            if (val.typeID === `A.${exampleNFTAdmin.substring(2)}.ExampleNFT.NFT`) {
                 found = true
             }
         })
         expect(found).toBe(false)
+    })
+
+    test("send ExampleNFT with setup", async () => {
+        await cleanup(alice)
+        let [_, setupErr] = await sendTransaction({
+            name: "ExampleNFT/setup_account_example_nft",
+            args: [],
+            signers: [alice],
+            limit: 999
+        })
+        expect(setupErr).toBe(null)
+
+        let [ids, idsErr] = await executeScript("ExampleNFT/get_account_ids", [alice])
+        expect(idsErr).toBe(null)
+        expect(ids.length).toBe(0)
+
+        let [sendRes, sendErr] = await sendTransaction({
+            name: "ExampleNFT/try_send_example_nft",
+            args: [alice],
+            signers: [exampleNFTAdmin],
+            limit: 9999
+        })
+        expect(sendErr).toBe(null)
+        expect(sendRes.events.length).toBe(1)
+        expect(sendRes.events[0].type).toBe(`A.${exampleNFTAdmin.substring(2)}.ExampleNFT.Deposit`)
+        expect(sendRes.events[0].data.to).toBe(alice)
+
+        let [idsAfter, idsAfterErr] = await executeScript("ExampleNFT/get_account_ids", [alice])
+        expect(idsAfterErr).toBe(null)
+        expect(idsAfter.length).toBe(1)
+    })
+
+    test("send ExampleNFT without setup", async () => {
+        await cleanup(alice)
+        let [_, idsErr] = await executeScript("ExampleNFT/get_account_ids", [alice])
+        expect(idsErr.message.includes("unexpectedly found nil while forcing an Optional value")).toBe(true)
+
+        let [sendRes, sendErr] = await sendTransaction({
+            name: "ExampleNFT/try_send_example_nft",
+            args: [alice],
+            signers: [exampleNFTAdmin],
+            limit: 9999
+        })
+        expect(sendErr).toBe(null)
+        expect(sendRes.events.length).toBe(3)
+        expect(sendRes.events[0].type).toBe(`A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`)
+        expect(sendRes.events[0].data.redeemer).toBe(alice)
+        expect(sendRes.events[0].data.type.typeID).toBe(`A.${exampleNFTAdmin.substring(2)}.ExampleNFT.NFT`)
     })
 })
