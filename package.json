@@ -7,7 +7,7 @@
     "lib": "lib"
   },
   "scripts": {
-    "test": "jest"
+    "test": "jest --runInBand"
   },
   "repository": {
     "type": "git",
@@ -27,5 +27,8 @@
     "flow-js-testing": "^0.2.3-alpha.6",
     "jest": "^28.1.0",
     "jest-environment-node": "^28.1.0"
+  },
+  "dependencies": {
+    "fcl-gcp-kms-authorizer": "^0.0.1-b"
   }
 }
