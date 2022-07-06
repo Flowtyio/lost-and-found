@@ -8,6 +8,10 @@ LostAndFound is a contract meant to solve this issue so other
 applications do not need to. It organizes items that users can redeem based on the type of the asset. This should make it easy for apps to 
 integrate with that they can own allowing users to claim their items in the LostAndFound. 
 
+|Network|Address|
+|-------|-------|
+|testnet|0x08bb72153d760e23|
+
 ## Structure
 This contract is organized into a few key components:
 
