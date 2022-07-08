@@ -2,6 +2,7 @@ import FungibleToken from "./FungibleToken.cdc"
 import FlowStorageFees from "./FlowStorageFees.cdc"
 import FlowToken from "./FlowToken.cdc"
 import NonFungibleToken from "./NonFungibleToken.cdc"
+import MetadataViews from "./MetadataViews.cdc"
 
 // LostAndFound
 // One big problem on the flow blockchain is how to handle accounts that are
@@ -69,6 +70,8 @@ pub contract LostAndFound {
         access(contract) var item: @AnyResource?
         // An optional message to attach to this item.
         pub let memo: String?
+        // an optional Display view so that frontend's that borrow this ticket know how to show it
+        pub let display: MetadataViews.Display?
         // The address that it allowed to withdraw the item fromt this ticket
         pub let redeemer: Address
         //The type of the resource (non-optional) so that bins can represent the true type of an item
@@ -79,10 +82,11 @@ pub contract LostAndFound {
         // flow token amount used to store this ticket is returned when the ticket is redeemed
         access(contract) let flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>?
 
-        init (item: @AnyResource, memo: String?, redeemer: Address, flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>?) {
+        init (item: @AnyResource, memo: String?, display: MetadataViews.Display?, redeemer: Address, flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>?) {
             self.type = item.getType()
             self.item <- item
             self.memo = memo
+            self.display = display
             self.redeemer = redeemer
             self.redeemed = false
 
@@ -326,6 +330,7 @@ pub contract LostAndFound {
             redeemer: Address,
             item: @AnyResource,
             memo: String?,
+            display: MetadataViews.Display?,
             storagePayment: @FungibleToken.Vault,
             flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>?
         ) {
@@ -340,7 +345,7 @@ pub contract LostAndFound {
                 let oldValue <- self.shelves.insert(key: redeemer, <- create Shelf(redeemer: redeemer))
                 destroy oldValue
             }
-            let ticket <- create Ticket(item: <-item, memo: memo, redeemer: redeemer, flowTokenRepayment: flowTokenRepayment)
+            let ticket <- create Ticket(item: <-item, memo: memo, display: display, redeemer: redeemer, flowTokenRepayment: flowTokenRepayment)
             let shelf = self.borrowShelf(redeemer: redeemer)
             shelf!.deposit(ticket: <-ticket)
 
@@ -436,6 +441,7 @@ pub contract LostAndFound {
         redeemer: Address,
         item: @AnyResource,
         memo: String?,
+        display: MetadataViews.Display?,
         storagePayment: @FungibleToken.Vault,
         flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>?
     ) {
@@ -444,13 +450,14 @@ pub contract LostAndFound {
         }
 
         let shelfManager = LostAndFound.borrowShelfManager()
-        shelfManager.deposit(redeemer: redeemer, item: <-item, memo: memo, storagePayment: <-storagePayment, flowTokenRepayment: flowTokenRepayment)
+        shelfManager.deposit(redeemer: redeemer, item: <-item, memo: memo, display: display, storagePayment: <-storagePayment, flowTokenRepayment: flowTokenRepayment)
     }
 
     pub fun trySendResource(
         resource: @AnyResource,
         cap: Capability,
         memo: String?,
+        display: MetadataViews.Display?,
         storagePayment: @FungibleToken.Vault,
         flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>
     ) {
@@ -467,7 +474,7 @@ pub contract LostAndFound {
             cap.borrow<&{FungibleToken.Receiver}>()!.deposit(from: <-vault)
             flowTokenRepayment.borrow()!.deposit(from: <-storagePayment)
         } else {
-            LostAndFound.deposit(redeemer: cap.address, item: <-resource, memo: memo, storagePayment: <-storagePayment, flowTokenRepayment: flowTokenRepayment)
+            LostAndFound.deposit(redeemer: cap.address, item: <-resource, memo: memo, display: display, storagePayment: <-storagePayment, flowTokenRepayment: flowTokenRepayment)
         }
     }
 

@@ -42,6 +42,7 @@ transaction(recipient: Address, amount: UFix64) {
             resource: <-resource,
             cap: exampleTokenReceiver,
             memo: nil,
+            display: nil,
             storagePayment: <-storageFee,
             flowTokenRepayment: self.flowReceiver
         )
