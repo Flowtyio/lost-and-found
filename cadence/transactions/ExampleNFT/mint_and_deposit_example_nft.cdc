@@ -33,12 +33,19 @@ transaction(recipient: Address) {
 
     execute {
         let token <- self.minter.mintAndReturnNFT(name: "testname", description: "descr", thumbnail: "image.html", royalties: [])
-        LostAndFound.borrowShelfManager().deposit(
+        let memo = "test memo"
+        let depositEstimate <- LostAndFound.estimateDeposit(redeemer: recipient, item: <-token, memo: memo)
+        let storageFee <- self.flowProvider.borrow()!.withdraw(amount: depositEstimate.storageFee)
+        let resource <- depositEstimate.withdraw()
+
+        LostAndFound.deposit(
             redeemer: recipient,
-            item: <-token,
-            memo: "test memo",
-            storagePaymentProvider: self.flowProvider,
+            item: <-resource,
+            memo: memo,
+            storagePayment: <-storageFee,
             flowTokenRepayment: self.flowReceiver
         )
+
+        destroy depositEstimate
     }
 }

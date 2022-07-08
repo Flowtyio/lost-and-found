@@ -3,7 +3,15 @@ import {
     getContractAddress,
     sendTransaction
 } from "flow-js-testing";
-import {after, alice, before, exampleTokenAdmin, getRedeemableTypes, lostAndFoundAdmin} from "./common";
+import {
+    after,
+    alice,
+    before,
+    exampleTokenAdmin, getEventFromTransaction,
+    getRedeemableTypes,
+    getTicketDepositFromRes,
+    lostAndFoundAdmin
+} from "./common";
 
 // Increase timeout if your tests failing due to timeout
 jest.setTimeout(10000);
@@ -51,11 +59,14 @@ describe("lost-and-found FungibleToken tests", () => {
             }
         })
         expect(found).toBe(true)
-
-        const ticketID = tx.events[2].data.ticketID
+        const eventType = `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`
+        const event = getEventFromTransaction(tx, eventType)
+        const ticketID = event.data.ticketID
         expect(ticketID).toBeGreaterThan(0)
         let [ticketDetail, ticketDetailErr] = await executeScript("ExampleToken/borrow_ticket", [alice, ticketID])
         expect(ticketDetailErr).toBe(null)
+        expect(ticketDetail.redeemer).toBe(alice)
+        expect(ticketDetail.type.typeID).toBe(`A.${exampleTokenAdmin.substring(2)}.ExampleToken.Vault`)
     })
 
     test("redeem ExampleToken", async () => {
@@ -102,10 +113,11 @@ describe("lost-and-found FungibleToken tests", () => {
             limit: 9999
         })
         expect(sendErr).toBe(null)
-        expect(sendRes.events.length).toBe(3)
-        expect(sendRes.events[2].type).toBe(`A.${exampleTokenAdmin.substring(2)}.ExampleToken.TokensDeposited`)
-        expect(Number(sendRes.events[2].data.amount)).toBe(depositAmount)
-        expect(sendRes.events[2].data.to).toBe(alice)
+        const eventType = `A.${exampleTokenAdmin.substring(2)}.ExampleToken.TokensDeposited`
+        const event = getEventFromTransaction(sendRes, eventType)
+        expect(event.type).toBe(eventType)
+        expect(Number(event.data.amount)).toBe(depositAmount)
+        expect(event.data.to).toBe(alice)
 
         let [balanceAfter, balanceAfterErr] = await executeScript("ExampleToken/get_example_token_balance", [alice])
         expect(balanceAfterErr).toBe(null)
@@ -130,9 +142,12 @@ describe("lost-and-found FungibleToken tests", () => {
             limit: 9999
         })
         expect(sendErr).toBe(null)
-        expect(sendRes.events.length).toBe(5)
-        expect(sendRes.events[2].type).toBe(`A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`)
-        expect(sendRes.events[2].data.type.typeID).toBe(`A.${exampleTokenAdmin.substring(2)}.ExampleToken.Vault`)
-        expect(sendRes.events[2].data.redeemer).toBe(alice)
+
+        const eventType = `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`
+        const event = getEventFromTransaction(sendRes, eventType)
+        expect(event !== null).toBe(true)
+        expect(event.type).toBe(eventType)
+        expect(event.data.type.typeID).toBe(`A.${exampleTokenAdmin.substring(2)}.ExampleToken.Vault`)
+        expect(event.data.redeemer).toBe(alice)
     })
 })

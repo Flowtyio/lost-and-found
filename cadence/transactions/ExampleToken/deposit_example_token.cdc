@@ -31,15 +31,20 @@ transaction(redeemer: Address, amount: UFix64) {
     execute {
         let minter <- self.tokenAdmin.createNewMinter(allowedAmount: amount)
         let mintedVault <- minter.mintTokens(amount: amount)
-        let manager = LostAndFound.borrowShelfManager()
-        manager.deposit(
+        let memo = "test memo"
+        let depositEstimate <- LostAndFound.estimateDeposit(redeemer: redeemer, item: <-mintedVault, memo: memo)
+        let storageFee <- self.flowProvider.borrow()!.withdraw(amount: depositEstimate.storageFee)
+        let resource <- depositEstimate.withdraw()
+
+        LostAndFound.deposit(
             redeemer: redeemer,
-            item: <-mintedVault,
-            memo: "hello!",
-            storagePaymentProvider: self.flowProvider,
+            item: <-resource,
+            memo: memo,
+            storagePayment: <-storageFee,
             flowTokenRepayment: self.flowReceiver
         )
 
+        destroy depositEstimate
         destroy minter
     }
 }

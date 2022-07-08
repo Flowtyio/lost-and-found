@@ -64,3 +64,11 @@ export const delay = (ms) =>
         setTimeout(resolve, ms)
     })
 
+export const getEventFromTransaction = (txRes, eventType) => {
+    for(let i = 0; i < txRes.events.length; i++) {
+        if(txRes.events[i].type === eventType) {
+            return txRes.events[i]
+        }
+    }
+    throw Error("did not find event in transaction")
+}
