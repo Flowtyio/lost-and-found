@@ -34,12 +34,20 @@ transaction(recipient: Address) {
     execute {
         let exampleNFTReceiver = getAccount(recipient).getCapability<&{NonFungibleToken.CollectionPublic}>(ExampleNFT.CollectionPublicPath)
         let token <- self.minter.mintAndReturnNFT(name: "testname", description: "descr", thumbnail: "image.html", royalties: [])
+
+        let memo = "test memo"
+        let depositEstimate <- LostAndFound.estimateDeposit(redeemer: recipient, item: <-token, memo: memo)
+        let storageFee <- self.flowProvider.borrow()!.withdraw(amount: depositEstimate.storageFee)
+        let resource <- depositEstimate.withdraw()
+
         LostAndFound.trySendResource(
-            resource: <-token, 
-            cap: exampleNFTReceiver, 
-            memo: nil, 
-            storagePaymentProvider: self.flowProvider,
+            resource: <-resource,
+            cap: exampleNFTReceiver,
+            memo: nil,
+            storagePayment: <-storageFee,
             flowTokenRepayment: self.flowReceiver
         )
+
+        destroy depositEstimate
     }
 }

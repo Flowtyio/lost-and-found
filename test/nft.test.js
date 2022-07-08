@@ -11,7 +11,7 @@ import {
     delay,
     ExampleNFT,
     exampleNFTAdmin,
-    exampleTokenAdmin,
+    exampleTokenAdmin, getEventFromTransaction,
     lostAndFoundAdmin
 } from "./common";
 
@@ -79,7 +79,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
 
     test("send ExampleNFT with setup", async () => {
         await cleanup(alice)
-        let [_, setupErr] = await sendTransaction({
+        let [setupRes, setupErr] = await sendTransaction({
             name: "ExampleNFT/setup_account_example_nft",
             args: [],
             signers: [alice],
@@ -91,16 +91,17 @@ describe("lost-and-found NonFungibleToken tests", () => {
         expect(idsErr).toBe(null)
         expect(ids.length).toBe(0)
 
-        let [sendRes, sendErr] = await sendTransaction({
+        const [sendRes, sendErr] = await sendTransaction({
             name: "ExampleNFT/try_send_example_nft",
             args: [alice],
             signers: [exampleNFTAdmin],
             limit: 9999
         })
+        const eventType = `A.${exampleNFTAdmin.substring(2)}.ExampleNFT.Deposit`
+        const event = getEventFromTransaction(sendRes, eventType)
         expect(sendErr).toBe(null)
-        expect(sendRes.events.length).toBe(1)
-        expect(sendRes.events[0].type).toBe(`A.${exampleNFTAdmin.substring(2)}.ExampleNFT.Deposit`)
-        expect(sendRes.events[0].data.to).toBe(alice)
+        expect(event.type).toBe(eventType)
+        expect(event.data.to).toBe(alice)
 
         let [idsAfter, idsAfterErr] = await executeScript("ExampleNFT/get_account_ids", [alice])
         expect(idsAfterErr).toBe(null)
@@ -118,10 +119,11 @@ describe("lost-and-found NonFungibleToken tests", () => {
             signers: [exampleNFTAdmin],
             limit: 9999
         })
+        const eventType = `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`
+        const event = getEventFromTransaction(sendRes, eventType)
         expect(sendErr).toBe(null)
-        expect(sendRes.events.length).toBe(3)
-        expect(sendRes.events[0].type).toBe(`A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`)
-        expect(sendRes.events[0].data.redeemer).toBe(alice)
-        expect(sendRes.events[0].data.type.typeID).toBe(`A.${exampleNFTAdmin.substring(2)}.ExampleNFT.NFT`)
+        expect(event.type).toBe(eventType)
+        expect(event.data.redeemer).toBe(alice)
+        expect(event.data.type.typeID).toBe(`A.${exampleNFTAdmin.substring(2)}.ExampleNFT.NFT`)
     })
 })

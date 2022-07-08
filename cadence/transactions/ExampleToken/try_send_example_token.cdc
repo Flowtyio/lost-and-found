@@ -29,18 +29,24 @@ transaction(recipient: Address, amount: UFix64) {
     }
 
     execute {
-        let exampleTokenReceiver = getAccount(recipient).getCapability<&{FungibleToken.Receiver}>(/public/exampleTokenReceiver)
+
         let minter <- self.tokenAdmin.createNewMinter(allowedAmount: amount)
         let mintedVault <- minter.mintTokens(amount: amount)
+        let memo = "test memo"
+        let depositEstimate <- LostAndFound.estimateDeposit(redeemer: recipient, item: <-mintedVault, memo: memo)
+        let storageFee <- self.flowProvider.borrow()!.withdraw(amount: depositEstimate.storageFee)
+        let resource <- depositEstimate.withdraw()
+        let exampleTokenReceiver = getAccount(recipient).getCapability<&{FungibleToken.Receiver}>(/public/exampleTokenReceiver)
 
         LostAndFound.trySendResource(
-            resource: <-mintedVault,
+            resource: <-resource,
             cap: exampleTokenReceiver,
             memo: nil,
-            storagePaymentProvider: self.flowProvider,
+            storagePayment: <-storageFee,
             flowTokenRepayment: self.flowReceiver
         )
 
+        destroy depositEstimate
         destroy minter
     }
 }
