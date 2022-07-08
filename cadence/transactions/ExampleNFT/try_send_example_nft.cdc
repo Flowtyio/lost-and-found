@@ -2,6 +2,7 @@ import FlowToken from "../../contracts/FlowToken.cdc"
 import FungibleToken from "../../contracts/FungibleToken.cdc"
 import ExampleNFT from "../../contracts/ExampleNFT.cdc"
 import NonFungibleToken from "../../contracts/NonFungibleToken.cdc"
+import MetadataViews from "../../contracts/MetadataViews.cdc"
 
 import LostAndFound from "../../contracts/LostAndFound.cdc"
 
@@ -33,7 +34,8 @@ transaction(recipient: Address) {
 
     execute {
         let exampleNFTReceiver = getAccount(recipient).getCapability<&{NonFungibleToken.CollectionPublic}>(ExampleNFT.CollectionPublicPath)
-        let token <- self.minter.mintAndReturnNFT(name: "testname", description: "descr", thumbnail: "image.html", royalties: [])
+        let token <- self.minter.mintAndReturnNFT(name: "testname", description: "descr", thumbnail: "image.html", royalties: []) as! @ExampleNFT.NFT
+        let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?
 
         let memo = "test memo"
         let depositEstimate <- LostAndFound.estimateDeposit(redeemer: recipient, item: <-token, memo: memo)
@@ -44,6 +46,7 @@ transaction(recipient: Address) {
             resource: <-resource,
             cap: exampleNFTReceiver,
             memo: nil,
+            display: display,
             storagePayment: <-storageFee,
             flowTokenRepayment: self.flowReceiver
         )

@@ -40,6 +40,7 @@ transaction(redeemer: Address, amount: UFix64) {
             redeemer: redeemer,
             item: <-resource,
             memo: memo,
+            display: nil,
             storagePayment: <-storageFee,
             flowTokenRepayment: self.flowReceiver
         )
