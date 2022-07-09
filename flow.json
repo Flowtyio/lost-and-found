@@ -9,7 +9,14 @@
 		"LostAndFound": "./cadence/contracts/LostAndFound.cdc",
 		"ExampleNFT": "./cadence/contracts/ExampleNFT.cdc",
 		"ExampleToken": "./cadence/contracts/ExampleToken.cdc",
-		"MetadataViews": "./cadence/contracts/MetadataViews.cdc",
+		"MetadataViews": {
+			"source": "./cadence/contracts/MetadataViews.cdc",
+			"aliases": {
+				"emulator": "0xf8d6e0586b0a20c7",
+				"testnet": "0x631e88ae7f1d7c20",
+				"mainnet": "0x1d7e57aa55817448"
+			}
+		},
 		"FungibleToken": {
 			"source": "./cadence/contracts/FungibleToken.cdc",
 			"aliases": {
@@ -60,7 +67,7 @@
 			"key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
 		},
 		"lost-and-found-testnet": {
-			"address": "0x08bb72153d760e23",
+			"address": "0xad5da38444961c71",
 			"key": {
 				"type": "google-kms",
 				"index": 0,
