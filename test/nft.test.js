@@ -125,6 +125,9 @@ describe("lost-and-found NonFungibleToken tests", () => {
         expect(event.type).toBe(eventType)
         expect(event.data.redeemer).toBe(alice)
         expect(event.data.type.typeID).toBe(`A.${exampleNFTAdmin.substring(2)}.ExampleNFT.NFT`)
+        expect(event.data.name).toBe("testname")
+        expect(event.data.description).toBe("descr")
+        expect(event.data.thumbnail).toBe("image.html")
     })
 
     test("borrow all ExampleNFT tickets", async () => {

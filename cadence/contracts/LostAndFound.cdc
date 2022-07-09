@@ -29,7 +29,7 @@ pub contract LostAndFound {
     pub let LostAndFoundPublicPath: PublicPath
     pub let LostAndFoundStoragePath: StoragePath
 
-    pub event TicketDeposited(redeemer: Address, ticketID: UInt64, type: Type, memo: String?)
+    pub event TicketDeposited(redeemer: Address, ticketID: UInt64, type: Type, memo: String?, name: String?, description: String?, thumbnail: String?)
     pub event TicketRedeemed(redeemer: Address, ticketID: UInt64, type: Type)
 
     // Placeholder receiver so that any resource can be supported, not just FT and NFT Receivers
@@ -204,8 +204,12 @@ pub contract LostAndFound {
             let ticketID = ticket.uuid
             let memo = ticket.memo
 
+            let name = ticket.display?.name
+            let description = ticket.display?.description
+            let thumbnail = ticket.display?.thumbnail?.uri()
+
             self.tickets[ticket.uuid] <-! ticket
-            emit TicketDeposited(redeemer: redeemer, ticketID: ticketID, type: self.type, memo: memo)
+            emit TicketDeposited(redeemer: redeemer, ticketID: ticketID, type: self.type, memo: memo, name: name, description: description, thumbnail: thumbnail)
         }
 
         pub fun getTicketIDs(): [UInt64] {
