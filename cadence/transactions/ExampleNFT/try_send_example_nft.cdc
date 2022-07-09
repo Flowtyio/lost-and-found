@@ -38,7 +38,7 @@ transaction(recipient: Address) {
         let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?
 
         let memo = "test memo"
-        let depositEstimate <- LostAndFound.estimateDeposit(redeemer: recipient, item: <-token, memo: memo)
+        let depositEstimate <- LostAndFound.estimateDeposit(redeemer: recipient, item: <-token, memo: memo, display: display)
         let storageFee <- self.flowProvider.borrow()!.withdraw(amount: depositEstimate.storageFee)
         let resource <- depositEstimate.withdraw()
 

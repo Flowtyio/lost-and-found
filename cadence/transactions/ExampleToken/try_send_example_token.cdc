@@ -33,7 +33,7 @@ transaction(recipient: Address, amount: UFix64) {
         let minter <- self.tokenAdmin.createNewMinter(allowedAmount: amount)
         let mintedVault <- minter.mintTokens(amount: amount)
         let memo = "test memo"
-        let depositEstimate <- LostAndFound.estimateDeposit(redeemer: recipient, item: <-mintedVault, memo: memo)
+        let depositEstimate <- LostAndFound.estimateDeposit(redeemer: recipient, item: <-mintedVault, memo: memo, display: nil)
         let storageFee <- self.flowProvider.borrow()!.withdraw(amount: depositEstimate.storageFee)
         let resource <- depositEstimate.withdraw()
         let exampleTokenReceiver = getAccount(recipient).getCapability<&{FungibleToken.Receiver}>(/public/exampleTokenReceiver)
