@@ -1,7 +1,7 @@
 import {
     getContractAddress,
     executeScript,
-    sendTransaction
+    sendTransaction, getAccountAddress, mintFlow
 } from "flow-js-testing";
 import {
     after,
@@ -125,5 +125,49 @@ describe("lost-and-found NonFungibleToken tests", () => {
         expect(event.type).toBe(eventType)
         expect(event.data.redeemer).toBe(alice)
         expect(event.data.type.typeID).toBe(`A.${exampleNFTAdmin.substring(2)}.ExampleNFT.NFT`)
+    })
+
+    test("borrow all ExampleNFT tickets", async () => {
+        await cleanup(alice)
+
+        const [mint1, mint1Err] = await depositExampleNFT(alice)
+        const [mint2, mint2Err] = await depositExampleNFT(alice)
+        const [mint3, mint3Err] = await depositExampleNFT(alice)
+
+        const depositEvent1 = getEventFromTransaction(mint1, `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`)
+        const depositEvent2 = getEventFromTransaction(mint2, `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`)
+        const depositEvent3 = getEventFromTransaction(mint3, `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`)
+
+        const ticket1 = depositEvent1.data.ticketID
+        const ticket2 = depositEvent2.data.ticketID
+        const ticket3 = depositEvent3.data.ticketID
+
+        const [res, err] = await executeScript("ExampleNFT/borrow_all_tickets", [alice])
+        expect(err).toBe(null)
+        expect(res.length).toBe(3)
+
+        let [found1, found2, found3] = [false, false, false]
+        res.forEach(val => {
+            switch (val.uuid) {
+                case ticket1:
+                    expect(found1).toBe(false)
+                    found1 = true
+                    break
+                case ticket2:
+                    expect(found2).toBe(false)
+                    found2 = true
+                    break
+                case ticket3:
+                    expect(found3).toBe(false)
+                    found3 = true
+                    break
+                default:
+                    throw Error("should never reach this")
+            }
+        })
+
+        expect(found1).toBe(true)
+        expect(found2).toBe(true)
+        expect(found3).toBe(true)
     })
 })
