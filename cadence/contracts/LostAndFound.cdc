@@ -147,6 +147,14 @@ pub contract LostAndFound {
             }
         }
 
+        // we need to be able to take our item back for storage cost estimation
+        // otherwise we can't actually deposit a ticket
+        access(account) fun takeItem(): @AnyResource {
+            self.redeemed = true
+            var redeemableItem <- self.item <- nil
+            return <-redeemableItem!
+        }
+
         // destructon is only allowed if the ticket has been redeemed and the underlying item is a our dummy resource
         destroy () {
             pre {
@@ -435,6 +443,7 @@ pub contract LostAndFound {
         redeemer: Address,
         item: @AnyResource,
         memo: String?,
+        display: MetadataViews.Display?
     ): @DepositEstimate {
         // is there already a shelf?
         let manager = LostAndFound.borrowShelfManager()
@@ -453,12 +462,16 @@ pub contract LostAndFound {
         
 
         let balanceBefore = FlowStorageFees.defaultTokenAvailableBalance(redeemer)
-        LostAndFound.account.save(<-item, to: /storage/temp)
+        let ftReceiver = LostAndFound.account.getCapability<&FlowToken.Vault{FungibleToken.Receiver}>(/public/flowTokenReceiver)
+        let ticket <- create LostAndFound.Ticket(item: <-item, memo: memo, display: display, redeemer: redeemer, flowTokenRepayment: ftReceiver)
+        LostAndFound.account.save(<-ticket, to: /storage/temp)
         let balanceAfter = FlowStorageFees.defaultTokenAvailableBalance(redeemer)
         
          // add a small buffer because storage fees can vary
         let storageFee = ((balanceBefore - balanceAfter) + shelfFee + binFee) * 1.01
-        let resource <- LostAndFound.account.load<@AnyResource>(from: /storage/temp)!
+        let loadedTicket <- LostAndFound.account.load<@AnyResource>(from: /storage/temp)! as! @LostAndFound.Ticket
+        let resource <- loadedTicket.takeItem()
+        destroy loadedTicket
         let estimate <- create DepositEstimate(item: <-resource, storageFee: storageFee)
         return <- estimate
     }
