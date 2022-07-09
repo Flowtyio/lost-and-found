@@ -29,7 +29,7 @@ pub contract LostAndFound {
     pub let LostAndFoundPublicPath: PublicPath
     pub let LostAndFoundStoragePath: StoragePath
 
-    pub event TicketDeposited(redeemer: Address, ticketID: UInt64, type: Type)
+    pub event TicketDeposited(redeemer: Address, ticketID: UInt64, type: Type, memo: String?)
     pub event TicketRedeemed(redeemer: Address, ticketID: UInt64, type: Type)
 
     // Placeholder receiver so that any resource can be supported, not just FT and NFT Receivers
@@ -175,6 +175,16 @@ pub contract LostAndFound {
             return &self.tickets[id] as &LostAndFound.Ticket?
         }
 
+        pub fun borrowAllTickets(): [&LostAndFound.Ticket] {
+            let tickets: [&LostAndFound.Ticket] = []
+            let ids = self.tickets.keys
+            for id in ids {
+                tickets.append(self.borrowTicket(id: id)!)
+            }
+
+            return tickets
+        }
+
         // deposit a ticket to this bin. The item type must match this bin's item type.
         pub fun deposit(ticket: @LostAndFound.Ticket) {
             pre {
@@ -184,9 +194,10 @@ pub contract LostAndFound {
 
             let redeemer = ticket.redeemer
             let ticketID = ticket.uuid
+            let memo = ticket.memo
 
             self.tickets[ticket.uuid] <-! ticket
-            emit TicketDeposited(redeemer: redeemer, ticketID: ticketID, type: self.type)
+            emit TicketDeposited(redeemer: redeemer, ticketID: ticketID, type: self.type, memo: memo)
         }
 
         pub fun getTicketIDs(): [UInt64] {
@@ -393,6 +404,21 @@ pub contract LostAndFound {
         return self.account.getCapability<&LostAndFound.ShelfManager>(LostAndFound.LostAndFoundPublicPath).borrow()!
     }
 
+    pub fun borrowAllTickets(addr: Address, type: Type): [&LostAndFound.Ticket] {
+        let manager = LostAndFound.borrowShelfManager()
+        let shelf = manager.borrowShelf(redeemer: addr)
+        if shelf == nil {
+            return []
+        }
+
+        let bin = shelf!.borrowBin(type: type)
+        if bin == nil {
+            return []
+        }
+
+        return bin!.borrowAllTickets()
+    }
+
     pub fun redeemAll(type: Type, max: Int?, receiver: Capability) {
         let manager = LostAndFound.borrowShelfManager()
         let shelf = manager.borrowShelf(redeemer: receiver.address)
@@ -435,6 +461,16 @@ pub contract LostAndFound {
         let resource <- LostAndFound.account.load<@AnyResource>(from: /storage/temp)!
         let estimate <- create DepositEstimate(item: <-resource, storageFee: storageFee)
         return <- estimate
+    }
+
+    pub fun getRedeemableTypes(_ addr: Address): [Type] {
+        let manager = LostAndFound.borrowShelfManager()
+        let shelf = manager.borrowShelf(redeemer: addr)
+        if shelf == nil {
+            return []
+        }
+
+        return shelf!.getRedeemableTypes()
     }
 
     pub fun deposit(

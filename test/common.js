@@ -17,8 +17,12 @@ export const LostAndFound = "LostAndFound"
 export let alice, exampleNFTAdmin, exampleTokenAdmin, lostAndFoundAdmin
 
 export const cleanup = async (account) => {
-    await sendTransaction({name: "ExampleToken/destroy_example_token_storage", args: [], signers: [account], limit: 9999})
-    await sendTransaction({name: "ExampleNFT/destroy_example_nft_storage", args: [], signers: [account], limit: 9999})
+    const [clearTx, clearTxErr] = await sendTransaction({name: "clear_all_tickets", args: [], signers: [account], limit: 9999})
+    expect(clearTxErr).toBe(null)
+    const [destroyFT, destroyFTErr] = await sendTransaction({name: "ExampleToken/destroy_example_token_storage", args: [], signers: [account], limit: 9999})
+    expect(destroyFTErr).toBe(null)
+    const [destroyNFT, destroyNFTErr] = await sendTransaction({name: "ExampleNFT/destroy_example_nft_storage", args: [], signers: [account], limit: 9999})
+    expect(destroyNFTErr).toBe(null)
 }
 
 export const setup = async () => {
