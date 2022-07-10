@@ -41,8 +41,10 @@ items that have been sent to them, and another helper to deposit items to a rede
 
 ### NFTs
 
+
 Deposit an item
-```
+
+```cadence
 import ExampleNFT from 0xf8d6e0586b0a20c7
 import NonFungibleToken from 0xf8d6e0586b0a20c7
 
@@ -67,7 +69,8 @@ transaction(recipient: Address) {
 ```
 
 Redeem them all
-```
+
+```cadence
 import ExampleNFT from 0xf8d6e0586b0a20c7
 import NonFungibleToken from 0xf8d6e0586b0a20c7
 
@@ -103,8 +106,10 @@ transaction() {
 ```
 
 ### Fungible Tokens
+
 Deposit a vault
-```
+
+```cadence
 import FungibleToken from 0xee82856bf20e2aa6
 import ExampleToken from 0xf8d6e0586b0a20c7
 
@@ -129,7 +134,8 @@ transaction(redeemer: Address, amount: UFix64) {
 ```
 
 Redeem them
-```
+
+```cadence
 import ExampleToken from 0xf8d6e0586b0a20c7
 import FungibleToken from 0xee82856bf20e2aa6
 
