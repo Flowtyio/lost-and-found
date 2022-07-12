@@ -10,7 +10,7 @@ integrate with that they can own allowing users to claim their items in the Lost
 
 |Network|Address|
 |-------|-------|
-|testnet|0xad5da38444961c71|
+|testnet|0xa95868b0f8c5cd80|
 
 ## Structure
 This contract is organized into a few key components:

@@ -67,7 +67,7 @@
 			"key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
 		},
 		"lost-and-found-testnet": {
-			"address": "0xad5da38444961c71",
+			"address": "0xa95868b0f8c5cd80",
 			"key": {
 				"type": "google-kms",
 				"index": 0,
