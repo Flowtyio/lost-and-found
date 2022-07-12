@@ -189,7 +189,7 @@ pub contract LostAndFound {
             return &self.tickets[id] as &LostAndFound.Ticket?
         }
 
-        pub fun borrowAllTickets(): [&LostAndFound.Ticket] {
+        pub fun borrowAllTicketsByType(): [&LostAndFound.Ticket] {
             let tickets: [&LostAndFound.Ticket] = []
             let ids = self.tickets.keys
             for id in ids {
@@ -480,7 +480,7 @@ pub contract LostAndFound {
         return self.account.getCapability<&LostAndFound.ShelfManager>(LostAndFound.LostAndFoundPublicPath).borrow()!
     }
 
-    pub fun borrowAllTickets(addr: Address, type: Type): [&LostAndFound.Ticket] {
+    pub fun borrowAllTicketsByType(addr: Address, type: Type): [&LostAndFound.Ticket] {
         let manager = LostAndFound.borrowShelfManager()
         let shelf = manager.borrowShelf(redeemer: addr)
         if shelf == nil {
@@ -492,7 +492,25 @@ pub contract LostAndFound {
             return []
         }
 
-        return bin!.borrowAllTickets()
+        return bin!.borrowAllTicketsByType()
+    }
+
+    pub fun borrowAllTickets(addr: Address): [&LostAndFound.Ticket] {
+        let manager = LostAndFound.borrowShelfManager()
+        let shelf = manager.borrowShelf(redeemer: addr)
+        if shelf == nil {
+            return []
+        }
+
+        let types = shelf!.getRedeemableTypes()
+        let allTickets = [] as [&LostAndFound.Ticket]
+
+        for type in types {
+            let tickets = LostAndFound.borrowAllTicketsByType(addr: addr, type: type)
+            allTickets.appendAll(tickets)
+        }
+
+        return allTickets
     }
 
     pub fun redeemAll(type: Type, max: Int?, receiver: Capability) {

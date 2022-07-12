@@ -11,9 +11,6 @@ transaction(recipient: Address) {
     let minter: &ExampleNFT.NFTMinter
     let depositer: &LostAndFound.Depositer
 
-    let flowProvider: Capability<&FlowToken.Vault{FungibleToken.Provider}>
-    let flowReceiver: Capability<&FlowToken.Vault{FungibleToken.Receiver}>
-
     prepare(acct: AuthAccount) {
         // borrow a reference to the NFTMinter resource in storage
         self.minter = acct.borrow<&ExampleNFT.NFTMinter>(from: /storage/exampleNFTMinter)
@@ -29,9 +26,6 @@ transaction(recipient: Address) {
                 target: /storage/flowTokenVault
             )
         }
-
-        self.flowProvider = acct.getCapability<&FlowToken.Vault{FungibleToken.Provider}>(flowTokenProviderPath)
-        self.flowReceiver = acct.getCapability<&FlowToken.Vault{FungibleToken.Receiver}>(/public/flowTokenReceiver)
     }
 
     execute {

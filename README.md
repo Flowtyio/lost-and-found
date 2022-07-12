@@ -41,7 +41,6 @@ items that have been sent to them, and another helper to deposit items to a rede
 
 ### NFTs
 
-
 Deposit an item
 
 ```cadence
@@ -173,4 +172,135 @@ transaction() {
     }
 }
  
+```
+
+## Depositer
+
+For contracts that are going to deposit things often and don't want to send flow tokens each time,
+or for consumers who are not permitted to access flow tokens in this way, you can also use the LostAndFound Depositer
+to maintain a pool of tokens and deposit through it.
+
+### Initialize the depositer
+```cadence
+import LostAndFound from 0xf8d6e0586b0a20c7
+import FungibleToken from 0xee82856bf20e2aa6
+import FlowToken from 0xf8d6e0586b0a20c7
+
+
+transaction {
+    prepare(acct: AuthAccount) {
+        if acct.borrow<&LostAndFound.Depositer>(from: LostAndFound.DepositerStoragePath) == nil {
+            let flowTokenRepayment = acct.getCapability<&FlowToken.Vault{FungibleToken.Receiver}>(/public/flowTokenReceiver)
+            let depositer <- LostAndFound.createDepositer(flowTokenRepayment)
+            acct.save(<-depositer, to: LostAndFound.DepositerStoragePath)
+            acct.link<&LostAndFound.Depositer{LostAndFound.DepositerPublic}>(LostAndFound.DepositerPublicPath, target: LostAndFound.DepositerStoragePath)
+        }
+    }
+}
+```
+
+### Add Flow tokens to the Depositer 
+```cadence
+import LostAndFound from 0xf8d6e0586b0a20c7
+import FungibleToken from 0xee82856bf20e2aa6
+import FlowToken from 0xf8d6e0586b0a20c7
+
+transaction(amount: UFix64) {
+    prepare(acct: AuthAccount) {
+        let flowVault = acct.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)!
+        let tokens <- flowVault.withdraw(amount: amount)
+        let vault <-tokens as! @FlowToken.Vault
+
+        let depositer = acct.borrow<&LostAndFound.Depositer>(from: LostAndFound.DepositerStoragePath)!
+        depositer.addFlowTokens(vault: <- vault)
+    }
+}
+```
+
+### Deposit through the Depositer
+```cadence
+
+import FlowToken from 0xf8d6e0586b0a20c7
+import FungibleToken from 0xee82856bf20e2aa6
+import ExampleNFT from 0xf8d6e0586b0a20c7
+import NonFungibleToken from 0xf8d6e0586b0a20c7
+import MetadataViews from 0xf8d6e0586b0a20c7
+
+import LostAndFound from 0xf8d6e0586b0a20c7
+
+transaction(recipient: Address) {
+    // local variable for storing the minter reference
+    let minter: &ExampleNFT.NFTMinter
+    let depositer: &LostAndFound.Depositer
+
+    prepare(acct: AuthAccount) {
+        // borrow a reference to the NFTMinter resource in storage
+        self.minter = acct.borrow<&ExampleNFT.NFTMinter>(from: /storage/exampleNFTMinter)
+            ?? panic("Could not borrow a reference to the NFT minter")
+        self.depositer = acct.borrow<&LostAndFound.Depositer>(from: LostAndFound.DepositerStoragePath)!
+
+        let flowTokenProviderPath = /private/flowTokenLostAndFoundProviderPath
+
+        if !acct.getCapability<&FlowToken.Vault{FungibleToken.Provider}>(flowTokenProviderPath).check() {
+            acct.unlink(flowTokenProviderPath)
+            acct.link<&FlowToken.Vault{FungibleToken.Provider}>(
+                flowTokenProviderPath,
+                target: /storage/flowTokenVault
+            )
+        }
+    }
+
+    execute {
+        let token <- self.minter.mintAndReturnNFT(name: "testname", description: "descr", thumbnail: "image.html", royalties: [])
+        let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?
+        let memo = "test memo"
+
+        self.depositer.deposit(
+            redeemer: recipient,
+            item: <-token,
+            memo: memo,
+            display: display
+        )
+    }
+}
+```
+
+## Discovery
+
+LostAndFound has a few helper functions to make it easier for you to discover what items an address has to redeem
+
+### Get all types deposited to an address
+```cadence
+import LostAndFound from 0xf8d6e0586b0a20c7
+
+pub fun main(addr: Address): [Type] {
+    let shelfManager = LostAndFound.borrowShelfManager()
+    let shelf = shelfManager.borrowShelf(redeemer: addr)
+    if shelf == nil {
+        return []
+    }
+    
+    return shelf!.getRedeemableTypes()
+}
+```
+
+### Borrow all tickets of all types
+
+```cadence
+import LostAndFound from 0xf8d6e0586b0a20c7
+
+pub fun main(addr: Address): [&LostAndFound.Ticket] {
+    return LostAndFound.borrowAllTickets(addr: addr)
+}
+```
+
+### Borrow all tickets of a type
+```cadence
+
+import LostAndFound from 0xf8d6e0586b0a20c7
+import ExampleNFT from 0xf8d6e0586b0a20c7
+
+pub fun main(addr: Address): [&LostAndFound.Ticket] {
+    return LostAndFound.borrowAllTicketsByType(addr: addr, type: Type<@ExampleNFT.NFT>())
+}
 ```
