@@ -433,7 +433,7 @@ pub contract LostAndFound {
             display: MetadataViews.Display?
         ) {
             let depositEstimate <- LostAndFound.estimateDeposit(redeemer: redeemer, item: <-item, memo: memo, display: display)
-            let storagePayment <- self.flowTokenVault.withdraw(amount: depositEstimate.storageFee)
+            let storagePayment <- self.withdrawTokens(amount: depositEstimate.storageFee)
             let resource <- depositEstimate.withdraw()
 
             let shelfManager = LostAndFound.borrowShelfManager()
