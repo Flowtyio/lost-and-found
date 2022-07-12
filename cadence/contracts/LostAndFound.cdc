@@ -28,9 +28,15 @@ import MetadataViews from "./MetadataViews.cdc"
 pub contract LostAndFound {
     pub let LostAndFoundPublicPath: PublicPath
     pub let LostAndFoundStoragePath: StoragePath
+    pub let DepositerPublicPath: PublicPath
+    pub let DepositerStoragePath: StoragePath
 
     pub event TicketDeposited(redeemer: Address, ticketID: UInt64, type: Type, memo: String?, name: String?, description: String?, thumbnail: String?)
     pub event TicketRedeemed(redeemer: Address, ticketID: UInt64, type: Type)
+
+    pub event DepositerCreated(uuid: UInt64)
+    pub event DepositerTokensAdded(uuid: UInt64, tokens: UFix64, balance: UFix64)
+    pub event DepositerTokensWithdrawn(uuid: UInt64, tokens: UFix64, balance: UFix64)
 
     // Placeholder receiver so that any resource can be supported, not just FT and NFT Receivers
     pub resource interface AnyResourceReceiver {
@@ -183,7 +189,7 @@ pub contract LostAndFound {
             return &self.tickets[id] as &LostAndFound.Ticket?
         }
 
-        pub fun borrowAllTickets(): [&LostAndFound.Ticket] {
+        pub fun borrowAllTicketsByType(): [&LostAndFound.Ticket] {
             let tickets: [&LostAndFound.Ticket] = []
             let ids = self.tickets.keys
             for id in ids {
@@ -412,11 +418,69 @@ pub contract LostAndFound {
         }
     }
 
+    pub resource interface DepositerPublic {
+        pub fun balance(): UFix64
+    }
+
+    pub resource Depositer: DepositerPublic {
+        access(self) let flowTokenVault: @FlowToken.Vault
+        pub let flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>
+
+        pub fun deposit(
+            redeemer: Address,
+            item: @AnyResource,
+            memo: String?,
+            display: MetadataViews.Display?
+        ) {
+            let depositEstimate <- LostAndFound.estimateDeposit(redeemer: redeemer, item: <-item, memo: memo, display: display)
+            let storagePayment <- self.withdrawTokens(amount: depositEstimate.storageFee)
+            let resource <- depositEstimate.withdraw()
+
+            let shelfManager = LostAndFound.borrowShelfManager()
+            shelfManager.deposit(redeemer: redeemer, item: <-resource, memo: memo, display: display, storagePayment: <-storagePayment, flowTokenRepayment: self.flowTokenRepayment)
+
+            destroy depositEstimate
+        }
+
+        pub fun withdrawTokens(amount: UFix64): @FungibleToken.Vault {
+            let tokens <-self.flowTokenVault.withdraw(amount: amount)
+            emit DepositerTokensWithdrawn(uuid: self.uuid, tokens: amount, balance: self.flowTokenVault.balance)
+            return <-tokens
+        }
+
+        pub fun addFlowTokens(vault: @FlowToken.Vault) {
+            let tokensAdded = vault.balance
+            self.flowTokenVault.deposit(from: <-vault)
+            emit DepositerTokensAdded(uuid: self.uuid, tokens: tokensAdded, balance: self.flowTokenVault.balance)
+        }
+
+        pub fun balance(): UFix64 {
+            return self.flowTokenVault.balance
+        }
+
+        init(_ flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>) {
+            self.flowTokenRepayment = flowTokenRepayment
+
+            let vault <- FlowToken.createEmptyVault()
+            self.flowTokenVault <- vault as! @FlowToken.Vault
+        }
+
+        destroy() {
+            self.flowTokenRepayment.borrow()!.deposit(from: <-self.flowTokenVault)
+        }
+    }
+
+    pub fun createDepositer(_ flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>): @Depositer {
+        let depositer <- create Depositer(flowTokenRepayment)
+        emit DepositerCreated(uuid: depositer.uuid)
+        return <- depositer
+    }
+
     pub fun borrowShelfManager(): &LostAndFound.ShelfManager {
         return self.account.getCapability<&LostAndFound.ShelfManager>(LostAndFound.LostAndFoundPublicPath).borrow()!
     }
 
-    pub fun borrowAllTickets(addr: Address, type: Type): [&LostAndFound.Ticket] {
+    pub fun borrowAllTicketsByType(addr: Address, type: Type): [&LostAndFound.Ticket] {
         let manager = LostAndFound.borrowShelfManager()
         let shelf = manager.borrowShelf(redeemer: addr)
         if shelf == nil {
@@ -428,7 +492,25 @@ pub contract LostAndFound {
             return []
         }
 
-        return bin!.borrowAllTickets()
+        return bin!.borrowAllTicketsByType()
+    }
+
+    pub fun borrowAllTickets(addr: Address): [&LostAndFound.Ticket] {
+        let manager = LostAndFound.borrowShelfManager()
+        let shelf = manager.borrowShelf(redeemer: addr)
+        if shelf == nil {
+            return []
+        }
+
+        let types = shelf!.getRedeemableTypes()
+        let allTickets = [] as [&LostAndFound.Ticket]
+
+        for type in types {
+            let tickets = LostAndFound.borrowAllTicketsByType(addr: addr, type: type)
+            allTickets.appendAll(tickets)
+        }
+
+        return allTickets
     }
 
     pub fun redeemAll(type: Type, max: Int?, receiver: Capability) {
@@ -534,6 +616,8 @@ pub contract LostAndFound {
     init() {
         self.LostAndFoundPublicPath = /public/lostAndFound
         self.LostAndFoundStoragePath = /storage/lostAndFound
+        self.DepositerPublicPath = /public/lostAndFoundDepositer
+        self.DepositerStoragePath = /storage/lostAndFoundDepositer
 
         let manager <- create ShelfManager()
         self.account.save(<-manager, to: self.LostAndFoundStoragePath)
