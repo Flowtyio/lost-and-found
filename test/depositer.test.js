@@ -1,7 +1,7 @@
 import {
-    getContractAddress,
     executeScript,
-    sendTransaction, getAccountAddress, mintFlow
+    sendTransaction,
+    mintFlow
 } from "flow-js-testing";
 import {
     after,
@@ -77,6 +77,23 @@ describe("lost-and-found NonFungibleToken tests", () => {
         expect(balanceAfter - balanceBefore).toBe(mintAmount)
     })
 
+    it("should update Depositer balance from public account", async () => {
+        await ensureDepositerSetup(exampleNFTAdmin)
+        const [balanceBeforeRes, balanceBeforeErr] = await getBalance(exampleNFTAdmin)
+        expect(balanceBeforeErr).toBe(null)
+        const balanceBefore = Number(balanceBeforeRes)
+
+        const mintAmount = 100
+        await mintFlow(alice, mintAmount)
+        await sendTransaction({name: "Depositer/add_flow_tokens_public", args: [exampleNFTAdmin, mintAmount], signers: [alice]})
+
+        const [balanceAfterRes, balanceAfterErr] = await getBalance(exampleNFTAdmin)
+        expect(balanceAfterErr).toBe(null)
+        const balanceAfter = Number(balanceAfterRes)
+
+        expect(balanceAfter - balanceBefore).toBe(mintAmount)
+    })
+
     it("should deposit to LostAndFound through the Depositer", async () => {
         await ensureDepositerSetup(exampleNFTAdmin)
         const mintAmount = 100
@@ -96,5 +113,42 @@ describe("lost-and-found NonFungibleToken tests", () => {
         const depositEvent = getEventFromTransaction(tx, `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`)
         expect(depositEvent.data.type.typeID).toBe(`A.${exampleNFTAdmin.substring(2)}.ExampleNFT.NFT`)
         expect(depositEvent.data.redeemer).toBe(alice)
+    })
+
+
+    it("send ExampleNFT with setup", async () => {
+        await ensureDepositerSetup(exampleNFTAdmin)
+        const mintAmount = 100
+        await mintFlow(exampleNFTAdmin, mintAmount)
+        await sendTransaction({name: "Depositer/add_flow_tokens", args: [mintAmount], signers: [exampleNFTAdmin]})
+
+        await cleanup(alice)
+        let [setupRes, setupErr] = await sendTransaction({
+            name: "ExampleNFT/setup_account_example_nft",
+            args: [],
+            signers: [alice],
+            limit: 999
+        })
+        expect(setupErr).toBe(null)
+
+        let [ids, idsErr] = await executeScript("ExampleNFT/get_account_ids", [alice])
+        expect(idsErr).toBe(null)
+        expect(ids.length).toBe(0)
+
+        const [sendRes, sendErr] = await sendTransaction({
+            name: "ExampleNFT/try_send_example_nft_with_depositor",
+            args: [alice],
+            signers: [exampleNFTAdmin],
+            limit: 9999
+        })
+        const eventType = `A.${exampleNFTAdmin.substring(2)}.ExampleNFT.Deposit`
+        const event = getEventFromTransaction(sendRes, eventType)
+        expect(sendErr).toBe(null)
+        expect(event.type).toBe(eventType)
+        expect(event.data.to).toBe(alice)
+
+        let [idsAfter, idsAfterErr] = await executeScript("ExampleNFT/get_account_ids", [alice])
+        expect(idsAfterErr).toBe(null)
+        expect(idsAfter.length).toBe(1)
     })
 })

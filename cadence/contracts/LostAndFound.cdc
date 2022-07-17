@@ -420,6 +420,7 @@ pub contract LostAndFound {
 
     pub resource interface DepositerPublic {
         pub fun balance(): UFix64
+        pub fun addFlowTokens(vault: @FlowToken.Vault)
     }
 
     pub resource Depositer: DepositerPublic {
@@ -438,6 +439,28 @@ pub contract LostAndFound {
 
             let shelfManager = LostAndFound.borrowShelfManager()
             shelfManager.deposit(redeemer: redeemer, item: <-resource, memo: memo, display: display, storagePayment: <-storagePayment, flowTokenRepayment: self.flowTokenRepayment)
+
+            destroy depositEstimate
+        }
+
+            pub fun trySendResource(
+                item: @AnyResource,
+                cap: Capability,
+                memo: String?,
+                display: MetadataViews.Display?
+        ) {
+            let depositEstimate <- LostAndFound.estimateDeposit(redeemer: cap.address, item: <-item, memo: memo, display: display)
+            let storagePayment <- self.withdrawTokens(amount: depositEstimate.storageFee)
+            let resource <- depositEstimate.withdraw()
+
+            LostAndFound.trySendResource(
+                resource: <-resource,
+                cap: cap,
+                memo: memo,
+                display: display,
+                storagePayment: <-storagePayment,
+                flowTokenRepayment: self.flowTokenRepayment
+            )
 
             destroy depositEstimate
         }

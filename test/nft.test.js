@@ -37,7 +37,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
         return [tx, err]
     }
 
-    test("deposit ExampleNFT", async () => {
+    it("deposit ExampleNFT", async () => {
         const exampleNFTAddress = await getContractAddress("ExampleNFT")
 
         await delay(1000)
@@ -57,7 +57,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
         expect(found).toBe(true)
     })
 
-    test("redeem ExampleNFT", async () => {
+    it("redeem ExampleNFT", async () => {
         await depositExampleNFT(alice)
         const signers = [alice]
         let [tx, redeemErr] = await sendTransaction({name: "ExampleNFT/redeem_example_nft_all", args: [], signers, limit: 9999})
@@ -77,7 +77,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
         expect(found).toBe(false)
     })
 
-    test("send ExampleNFT with setup", async () => {
+    it("send ExampleNFT with setup", async () => {
         await cleanup(alice)
         let [setupRes, setupErr] = await sendTransaction({
             name: "ExampleNFT/setup_account_example_nft",
@@ -108,7 +108,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
         expect(idsAfter.length).toBe(1)
     })
 
-    test("send ExampleNFT without setup", async () => {
+    it("send ExampleNFT without setup", async () => {
         await cleanup(alice)
         let [_, idsErr] = await executeScript("ExampleNFT/get_account_ids", [alice])
         expect(idsErr.message.includes("unexpectedly found nil while forcing an Optional value")).toBe(true)
@@ -130,7 +130,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
         expect(event.data.thumbnail).toBe("image.html")
     })
 
-    test("borrow all ExampleNFT tickets", async () => {
+    it("borrow all ExampleNFT tickets", async () => {
         await cleanup(alice)
 
         const [mint1, mint1Err] = await depositExampleNFT(alice)
