@@ -31,7 +31,7 @@ If a bin is emptied of all its Tickets, it can be destroyed and a new one would 
 
 ### Ticket
 Tickets are the resource that contain our deposited items to be redeemed by other accounts. A ticket has an item which represents
-the resource being deposited, a redeemer address, and a memo in case the depositer would like to send a message to the redeemer
+the resource being deposited, a redeemer address, and a memo in case the depositor would like to send a message to the redeemer
 
 ### ShelfManager
 The ShelfManager is a light wrapper around our stored shelves. It exposes a means to borrow shelves so that redeemers can withdraw
@@ -174,13 +174,13 @@ transaction() {
  
 ```
 
-## Depositer
+## Depositor
 
 For contracts that are going to deposit things often and don't want to send flow tokens each time,
-or for consumers who are not permitted to access flow tokens in this way, you can also use the LostAndFound Depositer
+or for consumers who are not permitted to access flow tokens in this way, you can also use the LostAndFound Depositor
 to maintain a pool of tokens and deposit through it.
 
-### Initialize the depositer
+### Initialize the depositor
 ```cadence
 import LostAndFound from 0xf8d6e0586b0a20c7
 import FungibleToken from 0xee82856bf20e2aa6
@@ -189,17 +189,17 @@ import FlowToken from 0xf8d6e0586b0a20c7
 
 transaction {
     prepare(acct: AuthAccount) {
-        if acct.borrow<&LostAndFound.Depositer>(from: LostAndFound.DepositerStoragePath) == nil {
+        if acct.borrow<&LostAndFound.Depositor>(from: LostAndFound.DepositorStoragePath) == nil {
             let flowTokenRepayment = acct.getCapability<&FlowToken.Vault{FungibleToken.Receiver}>(/public/flowTokenReceiver)
-            let depositer <- LostAndFound.createDepositer(flowTokenRepayment)
-            acct.save(<-depositer, to: LostAndFound.DepositerStoragePath)
-            acct.link<&LostAndFound.Depositer{LostAndFound.DepositerPublic}>(LostAndFound.DepositerPublicPath, target: LostAndFound.DepositerStoragePath)
+            let depositor <- LostAndFound.createDepositor(flowTokenRepayment)
+            acct.save(<-depositor, to: LostAndFound.DepositorStoragePath)
+            acct.link<&LostAndFound.Depositor{LostAndFound.DepositorPublic}>(LostAndFound.DepositorPublicPath, target: LostAndFound.DepositorStoragePath)
         }
     }
 }
 ```
 
-### Add Flow tokens to the Depositer 
+### Add Flow tokens to the Depositor 
 ```cadence
 import LostAndFound from 0xf8d6e0586b0a20c7
 import FungibleToken from 0xee82856bf20e2aa6
@@ -211,13 +211,13 @@ transaction(amount: UFix64) {
         let tokens <- flowVault.withdraw(amount: amount)
         let vault <-tokens as! @FlowToken.Vault
 
-        let depositer = acct.borrow<&LostAndFound.Depositer>(from: LostAndFound.DepositerStoragePath)!
-        depositer.addFlowTokens(vault: <- vault)
+        let depositor = acct.borrow<&LostAndFound.Depositor>(from: LostAndFound.DepositorStoragePath)!
+        depositor.addFlowTokens(vault: <- vault)
     }
 }
 ```
 
-### Deposit through the Depositer
+### Deposit through the Depositor
 ```cadence
 
 import FlowToken from 0xf8d6e0586b0a20c7
@@ -231,13 +231,13 @@ import LostAndFound from 0xf8d6e0586b0a20c7
 transaction(recipient: Address) {
     // local variable for storing the minter reference
     let minter: &ExampleNFT.NFTMinter
-    let depositer: &LostAndFound.Depositer
+    let depositor: &LostAndFound.Depositor
 
     prepare(acct: AuthAccount) {
         // borrow a reference to the NFTMinter resource in storage
         self.minter = acct.borrow<&ExampleNFT.NFTMinter>(from: /storage/exampleNFTMinter)
             ?? panic("Could not borrow a reference to the NFT minter")
-        self.depositer = acct.borrow<&LostAndFound.Depositer>(from: LostAndFound.DepositerStoragePath)!
+        self.depositor = acct.borrow<&LostAndFound.Depositor>(from: LostAndFound.DepositorStoragePath)!
 
         let flowTokenProviderPath = /private/flowTokenLostAndFoundProviderPath
 
@@ -255,7 +255,7 @@ transaction(recipient: Address) {
         let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?
         let memo = "test memo"
 
-        self.depositer.deposit(
+        self.depositor.deposit(
             redeemer: recipient,
             item: <-token,
             memo: memo,

@@ -9,13 +9,13 @@ import LostAndFound from "../../contracts/LostAndFound.cdc"
 transaction(recipient: Address) {
     // local variable for storing the minter reference
     let minter: &ExampleNFT.NFTMinter
-    let depositer: &LostAndFound.Depositer
+    let depositor: &LostAndFound.Depositor
 
     prepare(acct: AuthAccount) {
         // borrow a reference to the NFTMinter resource in storage
         self.minter = acct.borrow<&ExampleNFT.NFTMinter>(from: /storage/exampleNFTMinter)
             ?? panic("Could not borrow a reference to the NFT minter")
-        self.depositer = acct.borrow<&LostAndFound.Depositer>(from: LostAndFound.DepositerStoragePath)!
+        self.depositor = acct.borrow<&LostAndFound.Depositor>(from: LostAndFound.DepositorStoragePath)!
 
         let flowTokenProviderPath = /private/flowTokenLostAndFoundProviderPath
 
@@ -33,7 +33,7 @@ transaction(recipient: Address) {
         let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?
         let memo = "test memo"
 
-        self.depositer.deposit(
+        self.depositor.deposit(
             redeemer: recipient,
             item: <-token,
             memo: memo,

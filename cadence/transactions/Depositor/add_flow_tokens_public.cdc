@@ -9,7 +9,7 @@ transaction(addr: Address, amount: UFix64) {
         let tokens <- flowVault.withdraw(amount: amount)
         let vault <-tokens as! @FlowToken.Vault
 
-        let depositer = getAccount(addr).getCapability<&{LostAndFound.DepositerPublic}>(LostAndFound.DepositerPublicPath).borrow()!
-        depositer.addFlowTokens(vault: <- vault)
+        let depositor = getAccount(addr).getCapability<&{LostAndFound.DepositorPublic}>(LostAndFound.DepositorPublicPath).borrow()!
+        depositor.addFlowTokens(vault: <- vault)
     }
 }

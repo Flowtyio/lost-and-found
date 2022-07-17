@@ -25,50 +25,50 @@ describe("lost-and-found NonFungibleToken tests", () => {
 
     afterEach(async () => {
         await after()
-        await destroyDepositer(ExampleNFT)
+        await destroyDepositor(ExampleNFT)
     });
 
-    const setupDepositer = async (account) => {
-        return await sendTransaction({name: "Depositer/setup", args: [], signers: [account]})
+    const setupDepositor = async (account) => {
+        return await sendTransaction({name: "Depositor/setup", args: [], signers: [account]})
     }
 
-    const addFlowTokensToDepositer = async (account, amount) => {
-        return await sendTransaction({name: "Depositer/add_flow_tokens", args: [amount], signers: [account]})
+    const addFlowTokensToDepositor = async (account, amount) => {
+        return await sendTransaction({name: "Depositor/add_flow_tokens", args: [amount], signers: [account]})
     }
 
-    const destroyDepositer = async (account) => {
-        return await sendTransaction({name: "Depositer/destroy", args: [], signers: [account]})
+    const destroyDepositor = async (account) => {
+        return await sendTransaction({name: "Depositor/destroy", args: [], signers: [account]})
     }
 
     const getBalance = async (account) => {
-        return await executeScript("Depositer/get_balance", [account])
+        return await executeScript("Depositor/get_balance", [account])
     }
 
-    const ensureDepositerSetup = async (account) => {
-        await destroyDepositer(account)
-        const [tx, err] = await setupDepositer(account)
+    const ensureDepositorSetup = async (account) => {
+        await destroyDepositor(account)
+        const [tx, err] = await setupDepositor(account)
         expect(err).toBe(null)
-        expect(tx.events[0].type).toBe(`A.${lostAndFoundAdmin.substring(2)}.LostAndFound.DepositerCreated`)
+        expect(tx.events[0].type).toBe(`A.${lostAndFoundAdmin.substring(2)}.LostAndFound.DepositorCreated`)
     }
 
 
-    it("should initialize a depositer", async () => {
-        await ensureDepositerSetup(exampleNFTAdmin)
+    it("should initialize a depositor", async () => {
+        await ensureDepositorSetup(exampleNFTAdmin)
 
         const [balance, balanceErr] = await getBalance(exampleNFTAdmin)
         expect(balanceErr).toBe(null)
         expect(Number(balance)).toBe(0)
     })
 
-    it("should update Depositer balance", async () => {
-        await ensureDepositerSetup(exampleNFTAdmin)
+    it("should update Depositor balance", async () => {
+        await ensureDepositorSetup(exampleNFTAdmin)
         const [balanceBeforeRes, balanceBeforeErr] = await getBalance(exampleNFTAdmin)
         expect(balanceBeforeErr).toBe(null)
         const balanceBefore = Number(balanceBeforeRes)
 
         const mintAmount = 100
         await mintFlow(exampleNFTAdmin, mintAmount)
-        await sendTransaction({name: "Depositer/add_flow_tokens", args: [mintAmount], signers: [exampleNFTAdmin]})
+        await sendTransaction({name: "Depositor/add_flow_tokens", args: [mintAmount], signers: [exampleNFTAdmin]})
 
         const [balanceAfterRes, balanceAfterErr] = await getBalance(exampleNFTAdmin)
         expect(balanceAfterErr).toBe(null)
@@ -77,15 +77,15 @@ describe("lost-and-found NonFungibleToken tests", () => {
         expect(balanceAfter - balanceBefore).toBe(mintAmount)
     })
 
-    it("should update Depositer balance from public account", async () => {
-        await ensureDepositerSetup(exampleNFTAdmin)
+    it("should update Depositor balance from public account", async () => {
+        await ensureDepositorSetup(exampleNFTAdmin)
         const [balanceBeforeRes, balanceBeforeErr] = await getBalance(exampleNFTAdmin)
         expect(balanceBeforeErr).toBe(null)
         const balanceBefore = Number(balanceBeforeRes)
 
         const mintAmount = 100
         await mintFlow(alice, mintAmount)
-        await sendTransaction({name: "Depositer/add_flow_tokens_public", args: [exampleNFTAdmin, mintAmount], signers: [alice]})
+        await sendTransaction({name: "Depositor/add_flow_tokens_public", args: [exampleNFTAdmin, mintAmount], signers: [alice]})
 
         const [balanceAfterRes, balanceAfterErr] = await getBalance(exampleNFTAdmin)
         expect(balanceAfterErr).toBe(null)
@@ -94,20 +94,20 @@ describe("lost-and-found NonFungibleToken tests", () => {
         expect(balanceAfter - balanceBefore).toBe(mintAmount)
     })
 
-    it("should deposit to LostAndFound through the Depositer", async () => {
-        await ensureDepositerSetup(exampleNFTAdmin)
+    it("should deposit to LostAndFound through the Depositor", async () => {
+        await ensureDepositorSetup(exampleNFTAdmin)
         const mintAmount = 100
         await mintFlow(exampleNFTAdmin, mintAmount)
-        await sendTransaction({name: "Depositer/add_flow_tokens", args: [mintAmount], signers: [exampleNFTAdmin]})
+        await sendTransaction({name: "Depositor/add_flow_tokens", args: [mintAmount], signers: [exampleNFTAdmin]})
 
         const args = [alice]
         const signers = [exampleNFTAdmin]
-        let [tx, err] = await sendTransaction({name: "ExampleNFT/mint_and_deposit_with_depositer", args, signers});
+        let [tx, err] = await sendTransaction({name: "ExampleNFT/mint_and_deposit_with_depositor", args, signers});
         expect(err).toBe(null)
 
-        const depositerWithdrawEvent = getEventFromTransaction(tx, `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.DepositerTokensWithdrawn`)
-        const tokens = Number(depositerWithdrawEvent.data.tokens)
-        const balance = Number(depositerWithdrawEvent.data.balance)
+        const depositorWithdrawEvent = getEventFromTransaction(tx, `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.DepositorTokensWithdrawn`)
+        const tokens = Number(depositorWithdrawEvent.data.tokens)
+        const balance = Number(depositorWithdrawEvent.data.balance)
         expect(tokens + balance).toBe(mintAmount)
 
         const depositEvent = getEventFromTransaction(tx, `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`)
@@ -117,10 +117,10 @@ describe("lost-and-found NonFungibleToken tests", () => {
 
 
     it("send ExampleNFT with setup", async () => {
-        await ensureDepositerSetup(exampleNFTAdmin)
+        await ensureDepositorSetup(exampleNFTAdmin)
         const mintAmount = 100
         await mintFlow(exampleNFTAdmin, mintAmount)
-        await sendTransaction({name: "Depositer/add_flow_tokens", args: [mintAmount], signers: [exampleNFTAdmin]})
+        await sendTransaction({name: "Depositor/add_flow_tokens", args: [mintAmount], signers: [exampleNFTAdmin]})
 
         await cleanup(alice)
         let [setupRes, setupErr] = await sendTransaction({
