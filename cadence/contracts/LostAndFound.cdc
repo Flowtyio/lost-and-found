@@ -35,6 +35,7 @@ pub contract LostAndFound {
     pub event TicketRedeemed(redeemer: Address, ticketID: UInt64, type: Type)
 
     pub event DepositorCreated(uuid: UInt64)
+    pub event DepositorBalanceLow(uuid: UInt64, threshold: UFix64, balance: UFix64)
     pub event DepositorTokensAdded(uuid: UInt64, tokens: UFix64, balance: UFix64)
     pub event DepositorTokensWithdrawn(uuid: UInt64, tokens: UFix64, balance: UFix64)
 
@@ -426,6 +427,25 @@ pub contract LostAndFound {
     pub resource Depositor: DepositorPublic {
         access(self) let flowTokenVault: @FlowToken.Vault
         pub let flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>
+        access(self) var lowBalanceThreshold: UFix64?
+
+        access(self) fun checkForLowBalance() {
+            if self.lowBalanceThreshold == nil {
+                return
+            }
+
+            if  self.lowBalanceThreshold != nil && self.balance() < self.lowBalanceThreshold! {
+                emit DepositorBalanceLow(uuid: self.uuid, threshold: self.lowBalanceThreshold!, balance: self.balance())
+            }
+        }
+
+        pub fun setLowBalanceThreshold(threshold: UFix64?) {
+            self.lowBalanceThreshold = threshold
+        }
+
+        pub fun getLowBalanceThreshold(): UFix64? {
+            return self.lowBalanceThreshold
+        }
 
         pub fun deposit(
             redeemer: Address,
@@ -481,11 +501,12 @@ pub contract LostAndFound {
             return self.flowTokenVault.balance
         }
 
-        init(_ flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>) {
+        init(_ flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>, lowBalanceThreshold: UFix64?) {
             self.flowTokenRepayment = flowTokenRepayment
 
             let vault <- FlowToken.createEmptyVault()
             self.flowTokenVault <- vault as! @FlowToken.Vault
+            self.lowBalanceThreshold = lowBalanceThreshold 
         }
 
         destroy() {
@@ -493,8 +514,8 @@ pub contract LostAndFound {
         }
     }
 
-    pub fun createDepositor(_ flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>): @Depositor {
-        let depositor <- create Depositor(flowTokenRepayment)
+    pub fun createDepositor(_ flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>, lowBalanceThreshold: UFix64?): @Depositor {
+        let depositor <- create Depositor(flowTokenRepayment, lowBalanceThreshold: lowBalanceThreshold)
         emit DepositorCreated(uuid: depositor.uuid)
         return <- depositor
     }
