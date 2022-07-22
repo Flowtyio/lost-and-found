@@ -7,14 +7,12 @@ import {
     after,
     alice,
     before,
-    cadenceContractTypeIdentifierGenerator,
     cadenceTypeIdentifierGenerator,
     cleanup,
-    delay,
     ExampleNFT,
     exampleNFTAdmin,
-    exampleTokenAdmin, getEventFromTransaction, LostAndFound,
-    lostAndFoundAdmin
+    getEventFromTransaction,
+    lostAndFoundAdmin,
 } from "./common";
 
 // Increase timeout if your tests failing due to timeout
@@ -35,24 +33,28 @@ describe("lost-and-found Depositor tests", () => {
         await destroyDepositor(ExampleNFT)
     });
 
-    const setupDepositor = async (account, lowBalanceThreshold) => {
-        return await sendTransaction({name: "Depositor/setup", args: [lowBalanceThreshold], signers: [account]})
+    const setupDepositor = (account, lowBalanceThreshold) => {
+        return sendTransaction({name: "Depositor/setup", args: [lowBalanceThreshold], signers: [account]})
     }
 
-    const addFlowTokensToDepositor = async (account, amount) => {
-        return await sendTransaction({name: "Depositor/add_flow_tokens", args: [amount], signers: [account]})
+    const addFlowTokensToDepositor = (account, amount) => {
+        return sendTransaction({name: "Depositor/add_flow_tokens", args: [amount], signers: [account]})
     }
 
-    const addFlowTokensToDepositorPublic = async (account, amount, depositorOwnerAddr) => {
-        return await sendTransaction({name: "Depositor/add_flow_tokens_public", args: [depositorOwnerAddr, amount], signers: [account]})
+    const addFlowTokensToDepositorPublic = (account, amount, depositorOwnerAddr) => {
+        return sendTransaction({name: "Depositor/add_flow_tokens_public", args: [depositorOwnerAddr, amount], signers: [account]})
     }
 
-    const destroyDepositor = async (account) => {
-        return await sendTransaction({name: "Depositor/destroy", args: [], signers: [account]})
+    const withdrawFlowFromDepositor = (account, amount) => {
+        return sendTransaction({name: "Depositor/withdraw_tokens", args: [amount], signers: [account]})
     }
 
-    const getBalance = async (account) => {
-        return await executeScript("Depositor/get_balance", [account])
+    const destroyDepositor = (account) => {
+        return sendTransaction({name: "Depositor/destroy", args: [], signers: [account]})
+    }
+
+    const getBalance = (account) => {
+        return executeScript("Depositor/get_balance", [account])
     }
 
     const ensureDepositorSetup = async (account, lowBalanceThreshold = null) => {
@@ -163,37 +165,48 @@ describe("lost-and-found Depositor tests", () => {
         expect(idsAfter.length).toBe(1)
     })
 
-    // describe("DepositorBalanceLow event", () => {
-    //     describe("expected emissions", () => {
-    //         const threshold = 100
-    //         const mintAmount = threshold - 1
-            
-    //         it("emits on DEPOSIT if threshold is set and balance after withdraw is below it", async () => {
-    //             await ensureDepositorSetup(exampleNFTAdmin, threshold)
-    //             await mintFlow(exampleNFTAdmin, mintAmount)
-    //             await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
-
-
-    //             const balanceLowEvent = getEventFromTransaction(
-    //                 sendRes,
-    //                 composeLostAndFoundTypeIdentifier("DepositorBalanceLow")
-    //             )
+    describe("DepositorBalanceLow event", () => {
+        // NB this describe block of tests share state
+        describe("expected emissions",  () => {
+            it("emits on DEPOSIT if threshold is set and balance after withdraw is below it", async () => {
+                const threshold = 100
+                const mintAmount = threshold - 1
+                await ensureDepositorSetup(exampleNFTAdmin, threshold)
+                await mintFlow(exampleNFTAdmin, mintAmount)
                 
+                const [sendRes, sendErr] = await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
+                expect(sendErr).toBe(null)
 
-    //             console.log("ble", balanceLowEvent)
-    //         })
+                const balanceLowEvent = getEventFromTransaction(
+                    sendRes,
+                    composeLostAndFoundTypeIdentifier("DepositorBalanceLow")
+                )
+                expect(balanceLowEvent).not.toBe(null)
 
-    //         // it("emits on WITHDRAW if threshold is set and balance after withdraw is below it", () => {
-    //         //     await ensureDepositorSetup(exampleNFTAdmin, threshold)
-    //         //     await mintFlow(exampleNFTAdmin, mintAmount)
-    //         //     await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
+                const {threshold: eventThreshold, balance} = balanceLowEvent.data
+                expect(parseFloat(eventThreshold)).toEqual(threshold)
+                expect(parseFloat(balance)).toEqual(mintAmount)
+            })
 
-                
-    //         // })
-    //     })
+            it("emits on WITHDRAW if threshold is set and balance after withdraw is below it", async () => {
+                const withdrawAmount = 50
+                const [sendRes, sendErr] = await withdrawFlowFromDepositor(exampleNFTAdmin, withdrawAmount)
+                expect(sendErr).toBe(null)
 
-    //     // it("should not be emitted when no threshold is set", () => {})
-    //     // it("should not be emitted when balance is not lower", () => {})
-    //     // it("should have a configurable threshold", () => {})
-    // })
+                const balanceLowEvent = getEventFromTransaction(
+                    sendRes,
+                    composeLostAndFoundTypeIdentifier("DepositorBalanceLow")
+                )
+                expect(balanceLowEvent).not.toBe(null)
+
+                const {threshold, balance} = balanceLowEvent.data
+                expect(parseFloat(threshold)).toEqual(100)
+                expect(parseFloat(balance)).toEqual(49)
+            })
+        })
+
+        // it("should not be emitted when no threshold is set", () => {})
+        // it("should not be emitted when balance is not lower", () => {})
+        // it("should have a configurable threshold", () => {})
+    })
 })
