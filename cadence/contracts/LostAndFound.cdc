@@ -430,7 +430,7 @@ pub contract LostAndFound {
         access(self) var lowBalanceThreshold: UFix64?
 
         access(self) fun checkForLowBalance(): Bool {
-            if  self.lowBalanceThreshold != nil &&self.balance() < self.lowBalanceThreshold! {
+            if  self.lowBalanceThreshold != nil &&self.balance() <= self.lowBalanceThreshold! {
                 emit DepositorBalanceLow(uuid: self.uuid, threshold: self.lowBalanceThreshold!, balance: self.balance())
                 return true
             }
