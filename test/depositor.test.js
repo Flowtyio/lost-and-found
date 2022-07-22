@@ -20,12 +20,14 @@ import {
 // Increase timeout if your tests failing due to timeout
 jest.setTimeout(10000);
 
-const composeLostAndFoundTypeIdentifier = cadenceTypeIdentifierGenerator(lostAndFoundAdmin, "LostAndFound")
-const composeExampleNFTTypeIdentifier = cadenceTypeIdentifierGenerator(exampleNFTAdmin, "ExampleNFT")
-
 describe("lost-and-found Depositor tests", () => {
+    let composeLostAndFoundTypeIdentifier, composeExampleNFTTypeIdentifier
+
     beforeEach(async () => {
         await before()
+        // addresses aren't initialized until here
+        composeLostAndFoundTypeIdentifier = cadenceTypeIdentifierGenerator(lostAndFoundAdmin, "LostAndFound")
+        composeExampleNFTTypeIdentifier = cadenceTypeIdentifierGenerator(exampleNFTAdmin, "ExampleNFT")
     });
 
     afterEach(async () => {
@@ -53,7 +55,7 @@ describe("lost-and-found Depositor tests", () => {
         return await executeScript("Depositor/get_balance", [account])
     }
 
-    const ensureDepositorSetup = async (account, lowBalanceThreshold) => {
+    const ensureDepositorSetup = async (account, lowBalanceThreshold = null) => {
         await destroyDepositor(account)
         const [tx, err] = await setupDepositor(account, lowBalanceThreshold)
         expect(err).toBe(null)
@@ -94,7 +96,7 @@ describe("lost-and-found Depositor tests", () => {
 
         const mintAmount = 100
         await mintFlow(alice, mintAmount)
-        addFlowTokensToDepositorPublic(alice, mintAmount, exampleNFTAdmin)
+        await addFlowTokensToDepositorPublic(alice, mintAmount, exampleNFTAdmin)
 
         const [balanceAfterRes, balanceAfterErr] = await getBalance(exampleNFTAdmin)
         expect(balanceAfterErr).toBe(null)
@@ -150,7 +152,8 @@ describe("lost-and-found Depositor tests", () => {
             signers: [exampleNFTAdmin],
             limit: 9999
         })
-        const event = getEventFromTransaction(sendRes, composeExampleNFTTypeIdentifier("Deposit"))
+        const eventType = composeExampleNFTTypeIdentifier("Deposit")
+        const event = getEventFromTransaction(sendRes, eventType)
         expect(sendErr).toBe(null)
         expect(event.type).toBe(eventType)
         expect(event.data.to).toBe(alice)
@@ -159,4 +162,38 @@ describe("lost-and-found Depositor tests", () => {
         expect(idsAfterErr).toBe(null)
         expect(idsAfter.length).toBe(1)
     })
+
+    // describe("DepositorBalanceLow event", () => {
+    //     describe("expected emissions", () => {
+    //         const threshold = 100
+    //         const mintAmount = threshold - 1
+            
+    //         it("emits on DEPOSIT if threshold is set and balance after withdraw is below it", async () => {
+    //             await ensureDepositorSetup(exampleNFTAdmin, threshold)
+    //             await mintFlow(exampleNFTAdmin, mintAmount)
+    //             await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
+
+
+    //             const balanceLowEvent = getEventFromTransaction(
+    //                 sendRes,
+    //                 composeLostAndFoundTypeIdentifier("DepositorBalanceLow")
+    //             )
+                
+
+    //             console.log("ble", balanceLowEvent)
+    //         })
+
+    //         // it("emits on WITHDRAW if threshold is set and balance after withdraw is below it", () => {
+    //         //     await ensureDepositorSetup(exampleNFTAdmin, threshold)
+    //         //     await mintFlow(exampleNFTAdmin, mintAmount)
+    //         //     await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
+
+                
+    //         // })
+    //     })
+
+    //     // it("should not be emitted when no threshold is set", () => {})
+    //     // it("should not be emitted when balance is not lower", () => {})
+    //     // it("should have a configurable threshold", () => {})
+    // })
 })
