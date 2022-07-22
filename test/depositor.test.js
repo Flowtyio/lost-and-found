@@ -7,20 +7,25 @@ import {
     after,
     alice,
     before,
+    cadenceTypeIdentifierGenerator,
     cleanup,
-    delay,
     ExampleNFT,
     exampleNFTAdmin,
-    exampleTokenAdmin, getEventFromTransaction, LostAndFound,
-    lostAndFoundAdmin
+    getEventFromTransaction,
+    lostAndFoundAdmin,
 } from "./common";
 
 // Increase timeout if your tests failing due to timeout
 jest.setTimeout(10000);
 
-describe("lost-and-found NonFungibleToken tests", () => {
+describe("lost-and-found Depositor tests", () => {
+    let composeLostAndFoundTypeIdentifier, composeExampleNFTTypeIdentifier
+
     beforeEach(async () => {
         await before()
+        // addresses aren't initialized until here
+        composeLostAndFoundTypeIdentifier = cadenceTypeIdentifierGenerator(lostAndFoundAdmin, "LostAndFound")
+        composeExampleNFTTypeIdentifier = cadenceTypeIdentifierGenerator(exampleNFTAdmin, "ExampleNFT")
     });
 
     afterEach(async () => {
@@ -28,27 +33,39 @@ describe("lost-and-found NonFungibleToken tests", () => {
         await destroyDepositor(ExampleNFT)
     });
 
-    const setupDepositor = async (account) => {
-        return await sendTransaction({name: "Depositor/setup", args: [], signers: [account]})
+    const setupDepositor = (account, lowBalanceThreshold) => {
+        return sendTransaction({name: "Depositor/setup", args: [lowBalanceThreshold], signers: [account]})
     }
 
-    const addFlowTokensToDepositor = async (account, amount) => {
-        return await sendTransaction({name: "Depositor/add_flow_tokens", args: [amount], signers: [account]})
+    const addFlowTokensToDepositor = (account, amount) => {
+        return sendTransaction({name: "Depositor/add_flow_tokens", args: [amount], signers: [account]})
     }
 
-    const destroyDepositor = async (account) => {
-        return await sendTransaction({name: "Depositor/destroy", args: [], signers: [account]})
+    const addFlowTokensToDepositorPublic = (account, amount, depositorOwnerAddr) => {
+        return sendTransaction({name: "Depositor/add_flow_tokens_public", args: [depositorOwnerAddr, amount], signers: [account]})
     }
 
-    const getBalance = async (account) => {
-        return await executeScript("Depositor/get_balance", [account])
+    const withdrawFlowFromDepositor = (account, amount) => {
+        return sendTransaction({name: "Depositor/withdraw_tokens", args: [amount], signers: [account]})
     }
 
-    const ensureDepositorSetup = async (account) => {
+    const setLowBalanceThreshold = (account, newThreshold) => {
+        return sendTransaction({name: "Depositor/set_threshold", args: [newThreshold], signers: [account]})
+    }
+
+    const destroyDepositor = (account) => {
+        return sendTransaction({name: "Depositor/destroy", args: [], signers: [account]})
+    }
+
+    const getBalance = (account) => {
+        return executeScript("Depositor/get_balance", [account])
+    }
+
+    const ensureDepositorSetup = async (account, lowBalanceThreshold = null) => {
         await destroyDepositor(account)
-        const [tx, err] = await setupDepositor(account)
+        const [tx, err] = await setupDepositor(account, lowBalanceThreshold)
         expect(err).toBe(null)
-        expect(tx.events[0].type).toBe(`A.${lostAndFoundAdmin.substring(2)}.LostAndFound.DepositorCreated`)
+        expect(tx.events[0].type).toBe(composeLostAndFoundTypeIdentifier("DepositorCreated"))
     }
 
 
@@ -68,7 +85,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
 
         const mintAmount = 100
         await mintFlow(exampleNFTAdmin, mintAmount)
-        await sendTransaction({name: "Depositor/add_flow_tokens", args: [mintAmount], signers: [exampleNFTAdmin]})
+        await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
 
         const [balanceAfterRes, balanceAfterErr] = await getBalance(exampleNFTAdmin)
         expect(balanceAfterErr).toBe(null)
@@ -85,7 +102,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
 
         const mintAmount = 100
         await mintFlow(alice, mintAmount)
-        await sendTransaction({name: "Depositor/add_flow_tokens_public", args: [exampleNFTAdmin, mintAmount], signers: [alice]})
+        await addFlowTokensToDepositorPublic(alice, mintAmount, exampleNFTAdmin)
 
         const [balanceAfterRes, balanceAfterErr] = await getBalance(exampleNFTAdmin)
         expect(balanceAfterErr).toBe(null)
@@ -98,20 +115,20 @@ describe("lost-and-found NonFungibleToken tests", () => {
         await ensureDepositorSetup(exampleNFTAdmin)
         const mintAmount = 100
         await mintFlow(exampleNFTAdmin, mintAmount)
-        await sendTransaction({name: "Depositor/add_flow_tokens", args: [mintAmount], signers: [exampleNFTAdmin]})
+        await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
 
         const args = [alice]
         const signers = [exampleNFTAdmin]
         let [tx, err] = await sendTransaction({name: "ExampleNFT/mint_and_deposit_with_depositor", args, signers});
         expect(err).toBe(null)
 
-        const depositorWithdrawEvent = getEventFromTransaction(tx, `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.DepositorTokensWithdrawn`)
+        const depositorWithdrawEvent = getEventFromTransaction(tx, composeLostAndFoundTypeIdentifier("DepositorTokensWithdrawn"))
         const tokens = Number(depositorWithdrawEvent.data.tokens)
         const balance = Number(depositorWithdrawEvent.data.balance)
         expect(tokens + balance).toBe(mintAmount)
 
-        const depositEvent = getEventFromTransaction(tx, `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`)
-        expect(depositEvent.data.type.typeID).toBe(`A.${exampleNFTAdmin.substring(2)}.ExampleNFT.NFT`)
+        const depositEvent = getEventFromTransaction(tx, composeLostAndFoundTypeIdentifier("TicketDeposited"))
+        expect(depositEvent.data.type.typeID).toBe(composeExampleNFTTypeIdentifier("NFT"))
         expect(depositEvent.data.redeemer).toBe(alice)
     })
 
@@ -120,7 +137,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
         await ensureDepositorSetup(exampleNFTAdmin)
         const mintAmount = 100
         await mintFlow(exampleNFTAdmin, mintAmount)
-        await sendTransaction({name: "Depositor/add_flow_tokens", args: [mintAmount], signers: [exampleNFTAdmin]})
+        await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
 
         await cleanup(alice)
         let [setupRes, setupErr] = await sendTransaction({
@@ -141,7 +158,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
             signers: [exampleNFTAdmin],
             limit: 9999
         })
-        const eventType = `A.${exampleNFTAdmin.substring(2)}.ExampleNFT.Deposit`
+        const eventType = composeExampleNFTTypeIdentifier("Deposit")
         const event = getEventFromTransaction(sendRes, eventType)
         expect(sendErr).toBe(null)
         expect(event.type).toBe(eventType)
@@ -150,5 +167,147 @@ describe("lost-and-found NonFungibleToken tests", () => {
         let [idsAfter, idsAfterErr] = await executeScript("ExampleNFT/get_account_ids", [alice])
         expect(idsAfterErr).toBe(null)
         expect(idsAfter.length).toBe(1)
+    })
+
+    describe("DepositorBalanceLow event", () => {
+        // NB this describe block of tests share state
+        describe("expected emissions",  () => {
+            it("emits on DEPOSIT if threshold is set and balance after is LESS", async () => {
+                const threshold = 100
+                const mintAmount = threshold - 1
+                await ensureDepositorSetup(exampleNFTAdmin, threshold)
+                await mintFlow(exampleNFTAdmin, mintAmount)
+                
+                const [sendRes, sendErr] = await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
+                expect(sendErr).toBeNull()
+
+                const balanceLowEvent = getEventFromTransaction(
+                    sendRes,
+                    composeLostAndFoundTypeIdentifier("DepositorBalanceLow")
+                )
+                const {threshold: eventThreshold, balance} = balanceLowEvent.data
+                expect(parseFloat(eventThreshold)).toEqual(threshold)
+                expect(parseFloat(balance)).toEqual(mintAmount)
+            })
+
+            it("emits on WITHDRAW if threshold is set and balance after is LESS", async () => {
+                const withdrawAmount = 50
+                const [sendRes, sendErr] = await withdrawFlowFromDepositor(exampleNFTAdmin, withdrawAmount)
+                expect(sendErr).toBeNull()
+
+                const balanceLowEvent = getEventFromTransaction(
+                    sendRes,
+                    composeLostAndFoundTypeIdentifier("DepositorBalanceLow")
+                )
+                const {threshold, balance} = balanceLowEvent.data
+                expect(parseFloat(threshold)).toEqual(100)
+                expect(parseFloat(balance)).toEqual(49)
+            })
+
+            it('emits if threshold is set and balance after is EQUAL', async () => {
+                const [sendRes, sendErr] = await addFlowTokensToDepositor(exampleNFTAdmin, 51)
+                expect(sendErr).toBeNull()
+
+                const balanceLowEvent = getEventFromTransaction(
+                    sendRes,
+                    composeLostAndFoundTypeIdentifier("DepositorBalanceLow")
+                )
+                const {threshold, balance} = balanceLowEvent.data
+                expect(parseFloat(threshold)).toEqual(100)
+                expect(parseFloat(balance)).toEqual(100)
+            })
+        })
+
+        it("should not be emitted when no threshold is set", async () => {
+            const mintAmount = 1
+            await ensureDepositorSetup(exampleNFTAdmin, null)
+            await mintFlow(exampleNFTAdmin, mintAmount)
+            
+            const [sendRes, sendErr] = await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
+            expect(sendErr).toBeNull()
+
+            const depositorTokensAddedEvent = getEventFromTransaction(
+                sendRes,
+                composeLostAndFoundTypeIdentifier("DepositorTokensAdded")
+            )
+            const { balance } = depositorTokensAddedEvent.data
+            expect(parseFloat(balance)).toEqual(mintAmount)
+
+            const balanceLowEvent = getEventFromTransaction(
+                sendRes,
+                composeLostAndFoundTypeIdentifier("DepositorBalanceLow"),
+                false
+            )
+            expect(balanceLowEvent).not.toBeDefined()
+        })
+
+        it("should not be emitted when balance is not lower", async () => {
+            const threshold = 100
+            const mintAmount = 101
+            await ensureDepositorSetup(exampleNFTAdmin, threshold)
+            await mintFlow(exampleNFTAdmin, mintAmount)
+
+            const [sendRes, sendErr] = await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
+            expect(sendErr).toBeNull()
+
+            const depositorTokensAddedEvent = getEventFromTransaction(
+                sendRes,
+                composeLostAndFoundTypeIdentifier("DepositorTokensAdded")
+            )
+            const { balance } = depositorTokensAddedEvent.data
+            expect(parseFloat(balance)).toEqual(mintAmount)
+
+            const balanceLowEvent = getEventFromTransaction(
+                sendRes,
+                composeLostAndFoundTypeIdentifier("DepositorBalanceLow"),
+                false
+            )
+            expect(balanceLowEvent).not.toBeDefined()
+        })
+
+
+        it("should have a configurable threshold", async () => {
+            const startThreshold = 2
+            const mintAmount = 50
+            await ensureDepositorSetup(exampleNFTAdmin, startThreshold)
+            await mintFlow(exampleNFTAdmin, mintAmount)
+            
+            // init tokens added is same as init threshold - event should emit
+            const [addRes, addErr] = await addFlowTokensToDepositor(exampleNFTAdmin, startThreshold)
+            expect(addErr).toBe(null)
+            const balanceLowEvent = getEventFromTransaction(
+                addRes,
+                composeLostAndFoundTypeIdentifier("DepositorBalanceLow")
+            )
+            expect(parseFloat(balanceLowEvent.data.threshold)).toEqual(startThreshold)
+            expect(parseFloat(balanceLowEvent.data.balance)).toEqual(startThreshold)
+            
+            // after adding tokens, balance is higher than threhsold - no emit
+            const [add2Res, add2Err] = await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount - startThreshold)
+            expect(add2Err).toBe(null)
+            const balanceLowEvent2 = getEventFromTransaction(
+                add2Res,
+                composeLostAndFoundTypeIdentifier("DepositorBalanceLow"),
+                false
+            )
+            expect(balanceLowEvent2).not.toBeDefined()
+            
+            // set balance higher than total tokens minted
+            const endThreshold = mintAmount * 2
+            const [_, thresholdErr] = await setLowBalanceThreshold(exampleNFTAdmin, endThreshold)
+            expect(thresholdErr).toBe(null)
+            
+
+            // after withdrawing events, balance is lower than threshold - emit
+            const [withdrawRes, withdrawErr] = await withdrawFlowFromDepositor(exampleNFTAdmin, mintAmount)
+            expect(withdrawErr).toBe(null)
+
+            const balanceLowEvent3 = getEventFromTransaction(
+                withdrawRes,
+                composeLostAndFoundTypeIdentifier("DepositorBalanceLow")
+            )
+            expect(parseFloat(balanceLowEvent3.data.threshold)).toEqual(endThreshold)
+            expect(parseFloat(balanceLowEvent3.data.balance)).toEqual(0)
+        })
     })
 })

@@ -7,7 +7,10 @@
     "lib": "lib"
   },
   "scripts": {
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "emulator": "flow emulator -v -f flow.json --network emulator",
+    "deploy": "flow project deploy --network emulator",
+    "deploy:update": "npm run deploy -- --update"
   },
   "repository": {
     "type": "git",

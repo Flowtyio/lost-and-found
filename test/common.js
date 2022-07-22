@@ -68,11 +68,26 @@ export const delay = (ms) =>
         setTimeout(resolve, ms)
     })
 
-export const getEventFromTransaction = (txRes, eventType) => {
+export const getEventFromTransaction = (txRes, eventType, throwError = true) => {
     for(let i = 0; i < txRes.events.length; i++) {
         if(txRes.events[i].type === eventType) {
             return txRes.events[i]
         }
     }
-    throw Error("did not find event in transaction")
+    if (throwError) {
+        throw Error("did not find event in transaction")
+    }
+}
+
+export const composeCadenceTypeIdentifier = (addressWithOrWithoutPrefix, contractName, typeName) => {
+    const address = addressWithOrWithoutPrefix.startsWith('0x') ? addressWithOrWithoutPrefix.slice(2) : addressWithOrWithoutPrefix
+    return `A.${address}.${contractName}.${typeName}`
+}
+
+export const cadenceTypeIdentifierGenerator = (addressWithOrWithoutPrefix, contractName) => {
+    return (typeName) => composeCadenceTypeIdentifier(addressWithOrWithoutPrefix, contractName, typeName)
+}
+
+export const cadenceContractTypeIdentifierGenerator = (addressWithOrWithoutPrefix) => {
+    return (contractName) => cadenceTypeIdentifierGenerator(addressWithOrWithoutPrefix, contractName)
 }
