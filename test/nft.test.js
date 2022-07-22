@@ -16,7 +16,7 @@ import {
 } from "./common";
 
 // Increase timeout if your tests failing due to timeout
-jest.setTimeout(10000);
+jest.setTimeout(100000);
 
 // TODO: test for NonFungibleToken.Receiver being used instead of CollectionPublic
 describe("lost-and-found NonFungibleToken tests", () => {
@@ -60,7 +60,12 @@ describe("lost-and-found NonFungibleToken tests", () => {
     it("redeem ExampleNFT", async () => {
         await depositExampleNFT(alice)
         const signers = [alice]
-        let [tx, redeemErr] = await sendTransaction({name: "ExampleNFT/redeem_example_nft_all", args: [], signers, limit: 9999})
+        let [tx, redeemErr] = await sendTransaction({
+            name: "ExampleNFT/redeem_example_nft_all",
+            args: [],
+            signers,
+            limit: 9999
+        })
         expect(redeemErr).toBe(null)
         let [result, err] = await executeScript("ExampleNFT/get_account_ids", [alice])
         expect(result.length).toBe(1)
@@ -172,5 +177,43 @@ describe("lost-and-found NonFungibleToken tests", () => {
         expect(found1).toBe(true)
         expect(found2).toBe(true)
         expect(found3).toBe(true)
+    })
+
+    it("should return all storage fees after redemption", async () => {
+        await cleanup(alice)
+        await sendTransaction({
+            name: "ExampleToken/destroy_example_token_storage",
+            signers: [alice],
+            args: [],
+            limit: 9999
+        })
+
+        let [beforeBalance, bErr] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
+        expect(bErr).toBe(null)
+
+        for (let i = 0; i < 10; i++) {
+            let [sendRes, sendErr] = await sendTransaction({
+                name: "ExampleNFT/try_send_multiple_example_nft",
+                args: [alice, 10],
+                signers: [exampleNFTAdmin],
+                limit: 9999
+            })
+            if(sendErr !== null) {break}
+        }
+
+        let [balance, balanceErr] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
+        expect(balanceErr).toBe(null)
+
+        let [tx, redeemErr] = await sendTransaction({
+            name: "ExampleNFT/redeem_example_nft_all",
+            args: [],
+            signers: [alice],
+            limit: 9999
+        })
+        expect(redeemErr).toBe(null)
+
+        let [afterBalance, aErr] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
+        expect(aErr).toBe(null)
+        expect(beforeBalance).toBe(afterBalance)
     })
 })

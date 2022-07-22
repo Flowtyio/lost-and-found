@@ -8,10 +8,10 @@ import {
     alice,
     before,
     cleanup,
-    delay,
+    delay, destroyDepositor, ensureDepositorSetup,
     ExampleNFT,
     exampleNFTAdmin,
-    exampleTokenAdmin, getEventFromTransaction, LostAndFound,
+    exampleTokenAdmin, getBalance, getEventFromTransaction, LostAndFound,
     lostAndFoundAdmin
 } from "./common";
 
@@ -27,30 +27,6 @@ describe("lost-and-found NonFungibleToken tests", () => {
         await after()
         await destroyDepositor(ExampleNFT)
     });
-
-    const setupDepositor = async (account) => {
-        return await sendTransaction({name: "Depositor/setup", args: [], signers: [account]})
-    }
-
-    const addFlowTokensToDepositor = async (account, amount) => {
-        return await sendTransaction({name: "Depositor/add_flow_tokens", args: [amount], signers: [account]})
-    }
-
-    const destroyDepositor = async (account) => {
-        return await sendTransaction({name: "Depositor/destroy", args: [], signers: [account]})
-    }
-
-    const getBalance = async (account) => {
-        return await executeScript("Depositor/get_balance", [account])
-    }
-
-    const ensureDepositorSetup = async (account) => {
-        await destroyDepositor(account)
-        const [tx, err] = await setupDepositor(account)
-        expect(err).toBe(null)
-        expect(tx.events[0].type).toBe(`A.${lostAndFoundAdmin.substring(2)}.LostAndFound.DepositorCreated`)
-    }
-
 
     it("should initialize a depositor", async () => {
         await ensureDepositorSetup(exampleNFTAdmin)
@@ -115,8 +91,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
         expect(depositEvent.data.redeemer).toBe(alice)
     })
 
-
-    it("send ExampleNFT with setup", async () => {
+    it("should send ExampleNFT with setup", async () => {
         await ensureDepositorSetup(exampleNFTAdmin)
         const mintAmount = 100
         await mintFlow(exampleNFTAdmin, mintAmount)
