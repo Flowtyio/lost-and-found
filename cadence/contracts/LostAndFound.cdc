@@ -181,9 +181,12 @@ pub contract LostAndFound {
         access(contract) let tickets: @{UInt64:Ticket}
         access(contract) let type: Type
 
-        init (type: Type) {
+        pub let flowTokenRepayment: Capability<&{FungibleToken.Receiver}>?
+
+        init (type: Type, flowTokenRepayment: Capability<&{FungibleToken.Receiver}>?) {
             self.tickets <- {}
             self.type = type
+            self.flowTokenRepayment = flowTokenRepayment
         }
 
         pub fun borrowTicket(id: UInt64): &LostAndFound.Ticket? {
@@ -237,15 +240,16 @@ pub contract LostAndFound {
     // It groups bins by type to help make discovery of the assets that a
     // redeeming address can claim.
     pub resource Shelf {
-        //TODO: soon Type can be used as key, get rid of identifierToType
         access(self) let bins: @{String: Bin}
         access(self) let identifierToType: {String: Type}
         access(self) let redeemer: Address
+        access(contract) let flowTokenRepayment: Capability<&{FungibleToken.Receiver}>?
 
-        init (redeemer: Address) {
+        init (redeemer: Address, flowTokenRepayment: Capability<&{FungibleToken.Receiver}>?) {
             self.bins <- {}
             self.identifierToType = {}
             self.redeemer = redeemer
+            self.flowTokenRepayment = flowTokenRepayment
         }
 
         pub fun getOwner(): Address {
@@ -271,12 +275,12 @@ pub contract LostAndFound {
             return &self.bins[type.identifier] as &LostAndFound.Bin?
         }
 
-        pub fun deposit(ticket: @LostAndFound.Ticket) {
+        pub fun deposit(ticket: @LostAndFound.Ticket, flowTokenRepayment: Capability<&{FungibleToken.Receiver}>?) {
             // is there a bin for this yet?
             let type = ticket.itemType()
             if !self.bins.containsKey(type.identifier) {
                 // no bin, make a new one and insert it
-                let oldValue <- self.bins.insert(key: type.identifier, <- create Bin(type: type))
+                let oldValue <- self.bins.insert(key: type.identifier, <- create Bin(type: type, flowTokenRepayment: ticket.flowTokenRepayment))
                 destroy oldValue
                 // add this mapping of type to identifier
                 self.identifierToType[type.identifier] = type
@@ -334,8 +338,15 @@ pub contract LostAndFound {
             }
 
             if borrowedBin.getTicketIDs().length == 0 {
-                let bin <-! self.bins.remove(key: type.identifier)
+                let bin <- self.bins.remove(key: type.identifier)!
+
+                let flowTokenRepayment = bin.flowTokenRepayment
+                let balanceBefore = FlowStorageFees.defaultTokenAvailableBalance(LostAndFound.account.address)
                 destroy bin
+                let balanceAfter = FlowStorageFees.defaultTokenAvailableBalance(LostAndFound.account.address)
+                let provider = LostAndFound.getFlowProvider()
+                let vault <- provider.withdraw(amount: balanceAfter-balanceBefore)
+                flowTokenRepayment!.borrow()!.deposit(from: <-vault)
             }
         }
 
@@ -372,12 +383,13 @@ pub contract LostAndFound {
 
             // check if there is a shelf for this user
             if !self.shelves.containsKey(redeemer) {
-                let oldValue <- self.shelves.insert(key: redeemer, <- create Shelf(redeemer: redeemer))
+                let oldValue <- self.shelves.insert(key: redeemer, <- create Shelf(redeemer: redeemer, flowTokenRepayment: flowTokenRepayment))
                 destroy oldValue
             }
             let ticket <- create Ticket(item: <-item, memo: memo, display: display, redeemer: redeemer, flowTokenRepayment: flowTokenRepayment)
             let shelf = self.borrowShelf(redeemer: redeemer)
-            shelf!.deposit(ticket: <-ticket)
+            let flowTokenRepayment = ticket.flowTokenRepayment
+            shelf!.deposit(ticket: <-ticket, flowTokenRepayment: flowTokenRepayment)
 
             let balanceAfter = FlowStorageFees.defaultTokenAvailableBalance(LostAndFound.account.address)
             let balanceDiff = balanceBefore - balanceAfter
@@ -408,10 +420,20 @@ pub contract LostAndFound {
         // delete a shelf if it has no redeemable types
         pub fun deleteShelf(_ addr: Address) {
             assert(self.shelves.containsKey(addr), message: "shelf does not exist")
-            let shelf <- self.shelves[addr] <- nil
+            let tmp <- self.shelves[addr] <- nil
+            let shelf <-! tmp!
 
-            assert(shelf?.getRedeemableTypes()?.length! == 0, message: "shelf still has redeemable types")
+            assert(shelf.getRedeemableTypes().length! == 0, message: "shelf still has redeemable types")
+            let flowTokenRepayment = shelf.flowTokenRepayment
+            let balanceBefore = FlowStorageFees.defaultTokenAvailableBalance(LostAndFound.account.address)
             destroy shelf
+            if flowTokenRepayment != nil && flowTokenRepayment!.check() {
+                let balanceAfter = FlowStorageFees.defaultTokenAvailableBalance(LostAndFound.account.address)
+                let provider = LostAndFound.getFlowProvider()
+                let vault <- provider.withdraw(amount: balanceAfter-balanceBefore)
+                flowTokenRepayment!.borrow()!.deposit(from: <-vault)
+            }
+            
         }
 
         destroy () {
@@ -669,3 +691,4 @@ pub contract LostAndFound {
         self.account.link<&LostAndFound.ShelfManager>(self.LostAndFoundPublicPath, target: self.LostAndFoundStoragePath)
     }
 }
+ 

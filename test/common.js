@@ -31,7 +31,7 @@ export const setup = async () => {
     const logging = false;
 
     await init(basePath, {port});
-    await emulator.start(port, logging);
+    await emulator.start(port, logging, "--transaction-fees");
 
     alice = await getAccountAddress("Alice")
     exampleNFTAdmin = await getAccountAddress(ExampleNFT)
@@ -90,4 +90,29 @@ export const cadenceTypeIdentifierGenerator = (addressWithOrWithoutPrefix, contr
 
 export const cadenceContractTypeIdentifierGenerator = (addressWithOrWithoutPrefix) => {
     return (contractName) => cadenceTypeIdentifierGenerator(addressWithOrWithoutPrefix, contractName)
+}
+
+export const setupDepositor = async (account) => {
+    return await sendTransaction({name: "Depositor/setup", args: [], signers: [account]})
+}
+
+export const addFlowTokensToDepositor = async (account, amount) => {
+    await ensureDepositorSetup(account)
+    await mintFlow(exampleNFTAdmin, amount)
+    return await sendTransaction({name: "Depositor/add_flow_tokens", args: [amount], signers: [account]})
+}
+
+export const destroyDepositor = async (account) => {
+    return await sendTransaction({name: "Depositor/destroy", args: [], signers: [account]})
+}
+
+export const getBalance = async (account) => {
+    return await executeScript("Depositor/get_balance", [account])
+}
+
+export const ensureDepositorSetup = async (account) => {
+    await destroyDepositor(account)
+    const [tx, err] = await setupDepositor(account)
+    expect(err).toBe(null)
+    expect(tx.events[0].type).toBe(`A.${lostAndFoundAdmin.substring(2)}.LostAndFound.DepositorCreated`)
 }

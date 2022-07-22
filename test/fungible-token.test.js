@@ -4,9 +4,10 @@ import {
     sendTransaction
 } from "flow-js-testing";
 import {
+    addFlowTokensToDepositor,
     after,
     alice,
-    before,
+    before, cleanup, exampleNFTAdmin,
     exampleTokenAdmin, getEventFromTransaction,
     getRedeemableTypes,
     getTicketDepositFromRes,
@@ -149,5 +150,52 @@ describe("lost-and-found FungibleToken tests", () => {
         expect(event.type).toBe(eventType)
         expect(event.data.type.typeID).toBe(`A.${exampleTokenAdmin.substring(2)}.ExampleToken.Vault`)
         expect(event.data.redeemer).toBe(alice)
+    })
+
+    it("should send ExampleToken through Depositor", async () => {
+        await cleanup(alice)
+        await addFlowTokensToDepositor(exampleTokenAdmin, 1)
+
+        let [setupRes, setupErr] = await sendTransaction({
+            name: "ExampleToken/setup_account_ft",
+            args: [],
+            signers: [alice],
+            limit: 999
+        })
+        expect(setupErr).toBe(null)
+
+        const tokensToSend = 100
+        const [sendRes, sendErr] = await sendTransaction({
+            name: "ExampleToken/try_send_example_token_depositor",
+            args: [alice, tokensToSend],
+            signers: [exampleTokenAdmin],
+            limit: 9999
+        })
+        const eventType = `A.${exampleTokenAdmin.substring(2)}.ExampleToken.TokensDeposited`
+        const event = getEventFromTransaction(sendRes, eventType)
+        expect(sendErr).toBe(null)
+        expect(event.type).toBe(eventType)
+        expect(event.data.to).toBe(alice)
+
+        let [balance, balanceErr] = await executeScript("ExampleToken/get_example_token_balance", [alice])
+        expect(balanceErr).toBe(null)
+    })
+
+    it("should deposit ExampleToken through Depositor", async () => {
+        await cleanup(alice)
+        await addFlowTokensToDepositor(exampleTokenAdmin, 1)
+
+        const tokensToSend = 100
+        const [sendRes, sendErr] = await sendTransaction({
+            name: "ExampleToken/try_send_example_token_depositor",
+            args: [alice, tokensToSend],
+            signers: [exampleTokenAdmin],
+            limit: 9999
+        })
+        const eventType = `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`
+        const event = getEventFromTransaction(sendRes, eventType)
+        expect(sendErr).toBe(null)
+        expect(event.data.redeemer).toBe(alice)
+        expect(event.data.type.typeID).toBe(`A.${exampleTokenAdmin.substring(2)}.ExampleToken.Vault`)
     })
 })

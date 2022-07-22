@@ -9,10 +9,16 @@ import {
     before,
     cadenceTypeIdentifierGenerator,
     cleanup,
+    delay,
+    destroyDepositor,
+    ensureDepositorSetup,
     ExampleNFT,
     exampleNFTAdmin,
+    exampleTokenAdmin,
+    getBalance,
     getEventFromTransaction,
-    lostAndFoundAdmin,
+    LostAndFound,
+    lostAndFoundAdmin
 } from "./common";
 
 // Increase timeout if your tests failing due to timeout
@@ -132,8 +138,7 @@ describe("lost-and-found Depositor tests", () => {
         expect(depositEvent.data.redeemer).toBe(alice)
     })
 
-
-    it("send ExampleNFT with setup", async () => {
+    it("should send ExampleNFT with setup", async () => {
         await ensureDepositorSetup(exampleNFTAdmin)
         const mintAmount = 100
         await mintFlow(exampleNFTAdmin, mintAmount)
@@ -177,7 +182,7 @@ describe("lost-and-found Depositor tests", () => {
                 const mintAmount = threshold - 1
                 await ensureDepositorSetup(exampleNFTAdmin, threshold)
                 await mintFlow(exampleNFTAdmin, mintAmount)
-                
+
                 const [sendRes, sendErr] = await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
                 expect(sendErr).toBeNull()
 
@@ -222,7 +227,7 @@ describe("lost-and-found Depositor tests", () => {
             const mintAmount = 1
             await ensureDepositorSetup(exampleNFTAdmin, null)
             await mintFlow(exampleNFTAdmin, mintAmount)
-            
+
             const [sendRes, sendErr] = await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
             expect(sendErr).toBeNull()
 
@@ -271,7 +276,7 @@ describe("lost-and-found Depositor tests", () => {
             const mintAmount = 50
             await ensureDepositorSetup(exampleNFTAdmin, startThreshold)
             await mintFlow(exampleNFTAdmin, mintAmount)
-            
+
             // init tokens added is same as init threshold - event should emit
             const [addRes, addErr] = await addFlowTokensToDepositor(exampleNFTAdmin, startThreshold)
             expect(addErr).toBe(null)
@@ -281,7 +286,7 @@ describe("lost-and-found Depositor tests", () => {
             )
             expect(parseFloat(balanceLowEvent.data.threshold)).toEqual(startThreshold)
             expect(parseFloat(balanceLowEvent.data.balance)).toEqual(startThreshold)
-            
+
             // after adding tokens, balance is higher than threhsold - no emit
             const [add2Res, add2Err] = await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount - startThreshold)
             expect(add2Err).toBe(null)
@@ -291,12 +296,12 @@ describe("lost-and-found Depositor tests", () => {
                 false
             )
             expect(balanceLowEvent2).not.toBeDefined()
-            
+
             // set balance higher than total tokens minted
             const endThreshold = mintAmount * 2
             const [_, thresholdErr] = await setLowBalanceThreshold(exampleNFTAdmin, endThreshold)
             expect(thresholdErr).toBe(null)
-            
+
 
             // after withdrawing events, balance is lower than threshold - emit
             const [withdrawRes, withdrawErr] = await withdrawFlowFromDepositor(exampleNFTAdmin, mintAmount)
