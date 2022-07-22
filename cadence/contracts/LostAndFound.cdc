@@ -429,14 +429,13 @@ pub contract LostAndFound {
         pub let flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>
         access(self) var lowBalanceThreshold: UFix64?
 
-        access(self) fun checkForLowBalance() {
-            if self.lowBalanceThreshold == nil {
-                return
+        access(self) fun checkForLowBalance(): Bool {
+            if  self.lowBalanceThreshold != nil &&self.balance() < self.lowBalanceThreshold! {
+                emit DepositorBalanceLow(uuid: self.uuid, threshold: self.lowBalanceThreshold!, balance: self.balance())
+                return true
             }
 
-            if  self.lowBalanceThreshold != nil && self.balance() < self.lowBalanceThreshold! {
-                emit DepositorBalanceLow(uuid: self.uuid, threshold: self.lowBalanceThreshold!, balance: self.balance())
-            }
+            return false
         }
 
         pub fun setLowBalanceThreshold(threshold: UFix64?) {
@@ -488,6 +487,7 @@ pub contract LostAndFound {
         pub fun withdrawTokens(amount: UFix64): @FungibleToken.Vault {
             let tokens <-self.flowTokenVault.withdraw(amount: amount)
             emit DepositorTokensWithdrawn(uuid: self.uuid, tokens: amount, balance: self.flowTokenVault.balance)
+            self.checkForLowBalance()
             return <-tokens
         }
 
@@ -495,6 +495,7 @@ pub contract LostAndFound {
             let tokensAdded = vault.balance
             self.flowTokenVault.deposit(from: <-vault)
             emit DepositorTokensAdded(uuid: self.uuid, tokens: tokensAdded, balance: self.flowTokenVault.balance)
+            self.checkForLowBalance()
         }
 
         pub fun balance(): UFix64 {
