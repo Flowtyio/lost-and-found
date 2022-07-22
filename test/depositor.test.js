@@ -7,6 +7,7 @@ import {
     after,
     alice,
     before,
+    cadenceTypeIdentifierGenerator,
     cleanup,
     delay,
     ExampleNFT,
@@ -18,7 +19,7 @@ import {
 // Increase timeout if your tests failing due to timeout
 jest.setTimeout(10000);
 
-describe("lost-and-found NonFungibleToken tests", () => {
+describe("lost-and-found Depositor tests", () => {
     beforeEach(async () => {
         await before()
     });
@@ -28,12 +29,16 @@ describe("lost-and-found NonFungibleToken tests", () => {
         await destroyDepositor(ExampleNFT)
     });
 
-    const setupDepositor = async (account) => {
-        return await sendTransaction({name: "Depositor/setup", args: [], signers: [account]})
+    const setupDepositor = async (account, lowBalanceThreshold) => {
+        return await sendTransaction({name: "Depositor/setup", args: [lowBalanceThreshold], signers: [account]})
     }
 
     const addFlowTokensToDepositor = async (account, amount) => {
         return await sendTransaction({name: "Depositor/add_flow_tokens", args: [amount], signers: [account]})
+    }
+
+    const addFlowTokensToDepositorPublic = async (account, amount, depositorOwnerAddr) => {
+        return await sendTransaction({name: "Depositor/add_flow_tokens_public", args: [depositorOwnerAddr, amount], signers: [account]})
     }
 
     const destroyDepositor = async (account) => {
@@ -44,9 +49,9 @@ describe("lost-and-found NonFungibleToken tests", () => {
         return await executeScript("Depositor/get_balance", [account])
     }
 
-    const ensureDepositorSetup = async (account) => {
+    const ensureDepositorSetup = async (account, lowBalanceThreshold) => {
         await destroyDepositor(account)
-        const [tx, err] = await setupDepositor(account)
+        const [tx, err] = await setupDepositor(account, lowBalanceThreshold)
         expect(err).toBe(null)
         expect(tx.events[0].type).toBe(`A.${lostAndFoundAdmin.substring(2)}.LostAndFound.DepositorCreated`)
     }
@@ -68,7 +73,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
 
         const mintAmount = 100
         await mintFlow(exampleNFTAdmin, mintAmount)
-        await sendTransaction({name: "Depositor/add_flow_tokens", args: [mintAmount], signers: [exampleNFTAdmin]})
+        await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
 
         const [balanceAfterRes, balanceAfterErr] = await getBalance(exampleNFTAdmin)
         expect(balanceAfterErr).toBe(null)
@@ -85,7 +90,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
 
         const mintAmount = 100
         await mintFlow(alice, mintAmount)
-        await sendTransaction({name: "Depositor/add_flow_tokens_public", args: [exampleNFTAdmin, mintAmount], signers: [alice]})
+        addFlowTokensToDepositorPublic(alice, mintAmount, exampleNFTAdmin)
 
         const [balanceAfterRes, balanceAfterErr] = await getBalance(exampleNFTAdmin)
         expect(balanceAfterErr).toBe(null)
@@ -98,7 +103,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
         await ensureDepositorSetup(exampleNFTAdmin)
         const mintAmount = 100
         await mintFlow(exampleNFTAdmin, mintAmount)
-        await sendTransaction({name: "Depositor/add_flow_tokens", args: [mintAmount], signers: [exampleNFTAdmin]})
+        await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
 
         const args = [alice]
         const signers = [exampleNFTAdmin]
@@ -120,7 +125,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
         await ensureDepositorSetup(exampleNFTAdmin)
         const mintAmount = 100
         await mintFlow(exampleNFTAdmin, mintAmount)
-        await sendTransaction({name: "Depositor/add_flow_tokens", args: [mintAmount], signers: [exampleNFTAdmin]})
+        await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
 
         await cleanup(alice)
         let [setupRes, setupErr] = await sendTransaction({
