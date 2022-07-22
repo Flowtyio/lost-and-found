@@ -76,3 +76,16 @@ export const getEventFromTransaction = (txRes, eventType) => {
     }
     throw Error("did not find event in transaction")
 }
+
+export const composeCadenceTypeIdentifier = (addressWithOrWithoutPrefix, contractName, typeName) => {
+    const address = addressWithOrWithoutPrefix.startsWith('0x') ? addressWithOrWithoutPrefix.slice(2) : addressWithOrWithoutPrefix
+    return `A.${address}.${contractName}.${typeName}`
+}
+
+export const cadenceTypeIdentifierGenerator = (addressWithOrWithoutPrefix, contractName) => {
+    return (typeName) => composeCadenceTypeIdentifier(addressWithOrWithoutPrefix, contractName, typeName)
+}
+
+export const cadenceContractTypeIdentifierGenerator = (addressWithOrWithoutPrefix) => {
+    return (contractName) => cadenceTypeIdentifierGenerator(addressWithOrWithoutPrefix, contractName)
+}

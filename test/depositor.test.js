@@ -7,6 +7,7 @@ import {
     after,
     alice,
     before,
+    cadenceContractTypeIdentifierGenerator,
     cadenceTypeIdentifierGenerator,
     cleanup,
     delay,
@@ -18,6 +19,9 @@ import {
 
 // Increase timeout if your tests failing due to timeout
 jest.setTimeout(10000);
+
+const composeLostAndFoundTypeIdentifier = cadenceTypeIdentifierGenerator(lostAndFoundAdmin, "LostAndFound")
+const composeExampleNFTTypeIdentifier = cadenceTypeIdentifierGenerator(exampleNFTAdmin, "ExampleNFT")
 
 describe("lost-and-found Depositor tests", () => {
     beforeEach(async () => {
@@ -53,7 +57,7 @@ describe("lost-and-found Depositor tests", () => {
         await destroyDepositor(account)
         const [tx, err] = await setupDepositor(account, lowBalanceThreshold)
         expect(err).toBe(null)
-        expect(tx.events[0].type).toBe(`A.${lostAndFoundAdmin.substring(2)}.LostAndFound.DepositorCreated`)
+        expect(tx.events[0].type).toBe(composeLostAndFoundTypeIdentifier("DepositorCreated"))
     }
 
 
@@ -110,13 +114,13 @@ describe("lost-and-found Depositor tests", () => {
         let [tx, err] = await sendTransaction({name: "ExampleNFT/mint_and_deposit_with_depositor", args, signers});
         expect(err).toBe(null)
 
-        const depositorWithdrawEvent = getEventFromTransaction(tx, `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.DepositorTokensWithdrawn`)
+        const depositorWithdrawEvent = getEventFromTransaction(tx, composeLostAndFoundTypeIdentifier("DepositorTokensWithdrawn"))
         const tokens = Number(depositorWithdrawEvent.data.tokens)
         const balance = Number(depositorWithdrawEvent.data.balance)
         expect(tokens + balance).toBe(mintAmount)
 
-        const depositEvent = getEventFromTransaction(tx, `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`)
-        expect(depositEvent.data.type.typeID).toBe(`A.${exampleNFTAdmin.substring(2)}.ExampleNFT.NFT`)
+        const depositEvent = getEventFromTransaction(tx, composeLostAndFoundTypeIdentifier("TicketDeposited"))
+        expect(depositEvent.data.type.typeID).toBe(composeExampleNFTTypeIdentifier("NFT"))
         expect(depositEvent.data.redeemer).toBe(alice)
     })
 
@@ -146,8 +150,7 @@ describe("lost-and-found Depositor tests", () => {
             signers: [exampleNFTAdmin],
             limit: 9999
         })
-        const eventType = `A.${exampleNFTAdmin.substring(2)}.ExampleNFT.Deposit`
-        const event = getEventFromTransaction(sendRes, eventType)
+        const event = getEventFromTransaction(sendRes, composeExampleNFTTypeIdentifier("Deposit"))
         expect(sendErr).toBe(null)
         expect(event.type).toBe(eventType)
         expect(event.data.to).toBe(alice)
