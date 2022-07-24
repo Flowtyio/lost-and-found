@@ -202,6 +202,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
         })
 
         let balancesAfter = await getAccountBalances([alice, exampleNFTAdmin, lostAndFoundAdmin, estimatorAdmin])
+        console.log({balances, balancesAfter})
         let [balance, balanceErr] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
         let [BalanceEstimator, errEstimator] = await executeScript("FlowToken/get_flow_token_balance", [estimatorAdmin])
         expect(balanceErr).toBe(null)
