@@ -8,10 +8,10 @@ import {
     alice,
     before,
     cleanup,
-    delay,
+    delay, estimatorAdmin,
     ExampleNFT,
     exampleNFTAdmin,
-    exampleTokenAdmin, getEventFromTransaction,
+    exampleTokenAdmin, getAccountBalances, getEventFromTransaction,
     lostAndFoundAdmin
 } from "./common";
 
@@ -181,27 +181,29 @@ describe("lost-and-found NonFungibleToken tests", () => {
 
     it("should return all storage fees after redemption", async () => {
         await cleanup(alice)
+        console.log({lostAndFoundAdmin, alice, exampleNFTAdmin, estimatorAdmin})
         await sendTransaction({
-            name: "ExampleToken/destroy_example_token_storage",
+            name: "ExampleNFT/destroy_example_nft_storage",
             signers: [alice],
             args: [],
             limit: 9999
         })
 
+        let balances = await getAccountBalances([alice, exampleNFTAdmin, lostAndFoundAdmin, estimatorAdmin])
         let [beforeBalance, bErr] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
+        let [beforeBalanceEstimator, bErrEstimator] = await executeScript("FlowToken/get_flow_token_balance", [estimatorAdmin])
         expect(bErr).toBe(null)
 
-        for (let i = 0; i < 10; i++) {
-            let [sendRes, sendErr] = await sendTransaction({
-                name: "ExampleNFT/try_send_multiple_example_nft",
-                args: [alice, 10],
-                signers: [exampleNFTAdmin],
-                limit: 9999
-            })
-            if(sendErr !== null) {break}
-        }
+        let [sendRes, sendErr] = await sendTransaction({
+            name: "ExampleNFT/mint_and_deposit_example_nfts",
+            args: [alice, 10],
+            signers: [exampleNFTAdmin],
+            limit: 9999
+        })
 
+        let balancesAfter = await getAccountBalances([alice, exampleNFTAdmin, lostAndFoundAdmin, estimatorAdmin])
         let [balance, balanceErr] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
+        let [BalanceEstimator, errEstimator] = await executeScript("FlowToken/get_flow_token_balance", [estimatorAdmin])
         expect(balanceErr).toBe(null)
 
         let [tx, redeemErr] = await sendTransaction({
