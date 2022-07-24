@@ -3,6 +3,7 @@ import FlowStorageFees from "./FlowStorageFees.cdc"
 import FlowToken from "./FlowToken.cdc"
 import NonFungibleToken from "./NonFungibleToken.cdc"
 import MetadataViews from "./MetadataViews.cdc"
+import FeeEstimator from "./FeeEstimator.cdc"
 
 // LostAndFound
 // One big problem on the flow blockchain is how to handle accounts that are
@@ -390,7 +391,6 @@ pub contract LostAndFound {
             let shelf = self.borrowShelf(redeemer: redeemer)
             let flowTokenRepayment = ticket.flowTokenRepayment
             shelf!.deposit(ticket: <-ticket, flowTokenRepayment: flowTokenRepayment)
-
             let balanceAfter = FlowStorageFees.defaultTokenAvailableBalance(LostAndFound.account.address)
             let balanceDiff = balanceBefore - balanceAfter
             let storagePaymentVault <- storagePayment.withdraw(amount: balanceDiff)
@@ -474,12 +474,15 @@ pub contract LostAndFound {
             memo: String?,
             display: MetadataViews.Display?
         ) {
-            let depositEstimate <- LostAndFound.estimateDeposit(redeemer: redeemer, item: <-item, memo: memo, display: display)
+            let ticket <- create Ticket(item: <-item, memo: memo, display: display, redeemer: redeemer, flowTokenRepayment: nil)
+            let depositEstimate <- FeeEstimator.estimateDeposit(item: <-ticket)
             let storagePayment <- self.withdrawTokens(amount: depositEstimate.storageFee)
-            let resource <- depositEstimate.withdraw()
+            let tmp <- depositEstimate.withdraw() as! @LostAndFound.Ticket
+            let item <- tmp.takeItem()
+            destroy tmp
 
             let shelfManager = LostAndFound.borrowShelfManager()
-            shelfManager.deposit(redeemer: redeemer, item: <-resource, memo: memo, display: display, storagePayment: <-storagePayment, flowTokenRepayment: self.flowTokenRepayment)
+            shelfManager.deposit(redeemer: redeemer, item: <-item, memo: memo, display: display, storagePayment: <-storagePayment, flowTokenRepayment: self.flowTokenRepayment)
 
             destroy depositEstimate
         }
@@ -614,18 +617,15 @@ pub contract LostAndFound {
         }
 
 
-        let balanceBefore = FlowStorageFees.defaultTokenAvailableBalance(redeemer)
         let ftReceiver = LostAndFound.account.getCapability<&FlowToken.Vault{FungibleToken.Receiver}>(/public/flowTokenReceiver)
         let ticket <- create LostAndFound.Ticket(item: <-item, memo: memo, display: display, redeemer: redeemer, flowTokenRepayment: ftReceiver)
-        LostAndFound.account.save(<-ticket, to: /storage/temp)
-        let balanceAfter = FlowStorageFees.defaultTokenAvailableBalance(redeemer)
+        let tmpEstimate <- FeeEstimator.estimateDeposit(item: <-ticket)
+        let tmpItem <- tmpEstimate.withdraw() as! @LostAndFound.Ticket
+        let item <- tmpItem.takeItem()
+        destroy tmpItem
 
-         // add a small buffer because storage fees can vary
-        let storageFee = ((balanceBefore - balanceAfter) + shelfFee + binFee) * 1.01
-        let loadedTicket <- LostAndFound.account.load<@AnyResource>(from: /storage/temp)! as! @LostAndFound.Ticket
-        let resource <- loadedTicket.takeItem()
-        destroy loadedTicket
-        let estimate <- create DepositEstimate(item: <-resource, storageFee: storageFee)
+        let estimate <- create DepositEstimate(item: <-item, storageFee: tmpEstimate.storageFee + shelfFee + binFee)
+        destroy tmpEstimate
         return <- estimate
     }
 
@@ -678,6 +678,10 @@ pub contract LostAndFound {
         } else {
             LostAndFound.deposit(redeemer: cap.address, item: <-resource, memo: memo, display: display, storagePayment: <-storagePayment, flowTokenRepayment: flowTokenRepayment)
         }
+    }
+
+    pub fun getAddress(): Address {
+        return self.account.address
     }
 
     init() {

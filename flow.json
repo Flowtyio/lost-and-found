@@ -7,6 +7,7 @@
 	},
 	"contracts": {
 		"LostAndFound": "./cadence/contracts/LostAndFound.cdc",
+		"FeeEstimator": "./cadence/contracts/FeeEstimator.cdc",
 		"ExampleNFT": "./cadence/contracts/ExampleNFT.cdc",
 		"ExampleToken": "./cadence/contracts/ExampleToken.cdc",
 		"MetadataViews": {

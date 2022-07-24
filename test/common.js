@@ -13,8 +13,9 @@ import {
 export const ExampleNFT = "ExampleNFTDeployer"
 export const ExampleToken = "ExampleTokenDeployer"
 export const LostAndFound = "LostAndFound"
+export const FeeEstimator = "FeeEstimator"
 
-export let alice, exampleNFTAdmin, exampleTokenAdmin, lostAndFoundAdmin
+export let alice, exampleNFTAdmin, exampleTokenAdmin, lostAndFoundAdmin, estimatorAdmin
 
 export const cleanup = async (account) => {
     const [clearTx, clearTxErr] = await sendTransaction({name: "clear_all_tickets", args: [], signers: [account], limit: 9999})
@@ -37,9 +38,11 @@ export const setup = async () => {
     exampleNFTAdmin = await getAccountAddress(ExampleNFT)
     exampleTokenAdmin = await getAccountAddress(ExampleToken)
     lostAndFoundAdmin = await getAccountAddress(LostAndFound)
+    estimatorAdmin = await getAccountAddress(FeeEstimator)
 
     await deployContractByName({name: "NonFungibleToken", update: true})
     await deployContractByName({name: "MetadataViews", update: true})
+    await deployContractByName({name: "FeeEstimator", to: estimatorAdmin, update: true})
     await deployContractByName({name: "ExampleNFT", to: exampleNFTAdmin, update: true})
     await deployContractByName({name: "LostAndFound", to: lostAndFoundAdmin, update: true})
     await deployContractByName({name: "ExampleToken", to: exampleTokenAdmin, update: true})
@@ -53,6 +56,7 @@ export const before = async () => {
     await mintFlow(exampleNFTAdmin, 1.0)
     await mintFlow(exampleTokenAdmin, 1.0)
     await mintFlow(lostAndFoundAdmin, 1.0)
+    await mintFlow(estimatorAdmin, 1.0)
 }
 
 export const after = async () => {
@@ -115,4 +119,14 @@ export const ensureDepositorSetup = async (account) => {
     const [tx, err] = await setupDepositor(account)
     expect(err).toBe(null)
     expect(tx.events[0].type).toBe(`A.${lostAndFoundAdmin.substring(2)}.LostAndFound.DepositorCreated`)
+}
+
+export const getAccountBalances = async (accounts) => {
+    const balances = {}
+    await Promise.all(Array.from(accounts).map(async account => {
+        let [balance, err] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
+        let [availableBalance, aErr] = await executeScript("FlowToken/get_available_flow_balance", [exampleNFTAdmin])
+        balances[account] = {balance, availableBalance}
+    }))
+    return balances
 }
