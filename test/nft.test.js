@@ -118,12 +118,14 @@ describe("lost-and-found NonFungibleToken tests", () => {
         let [_, idsErr] = await executeScript("ExampleNFT/get_account_ids", [alice])
         expect(idsErr.message.includes("unexpectedly found nil while forcing an Optional value")).toBe(true)
 
+        let balancesBefore = await getAccountBalances([alice, lostAndFoundAdmin, exampleNFTAdmin])
         let [sendRes, sendErr] = await sendTransaction({
             name: "ExampleNFT/try_send_example_nft",
             args: [alice],
             signers: [exampleNFTAdmin],
             limit: 9999
         })
+        let balancesAfter = await getAccountBalances([alice, lostAndFoundAdmin, exampleNFTAdmin])
         const eventType = `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`
         const event = getEventFromTransaction(sendRes, eventType)
         expect(sendErr).toBe(null)
