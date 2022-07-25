@@ -16,16 +16,6 @@ transaction(recipient: Address) {
         self.minter = acct.borrow<&ExampleNFT.NFTMinter>(from: /storage/exampleNFTMinter)
             ?? panic("Could not borrow a reference to the NFT minter")
         self.depositor = acct.borrow<&LostAndFound.Depositor>(from: LostAndFound.DepositorStoragePath)!
-
-        let flowTokenProviderPath = /private/flowTokenLostAndFoundProviderPath
-
-        if !acct.getCapability<&FlowToken.Vault{FungibleToken.Provider}>(flowTokenProviderPath).check() {
-            acct.unlink(flowTokenProviderPath)
-            acct.link<&FlowToken.Vault{FungibleToken.Provider}>(
-                flowTokenProviderPath,
-                target: /storage/flowTokenVault
-            )
-        }
     }
 
     execute {

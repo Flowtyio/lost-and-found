@@ -183,7 +183,6 @@ describe("lost-and-found NonFungibleToken tests", () => {
 
     it("should return all storage fees after redemption", async () => {
         await cleanup(alice)
-        console.log({lostAndFoundAdmin, alice, exampleNFTAdmin, estimatorAdmin})
         await sendTransaction({
             name: "ExampleNFT/destroy_example_nft_storage",
             signers: [alice],
@@ -191,9 +190,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
             limit: 9999
         })
 
-        let balances = await getAccountBalances([alice, exampleNFTAdmin, lostAndFoundAdmin, estimatorAdmin])
         let [beforeBalance, bErr] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
-        let [beforeBalanceEstimator, bErrEstimator] = await executeScript("FlowToken/get_flow_token_balance", [estimatorAdmin])
         expect(bErr).toBe(null)
 
         let [sendRes, sendErr] = await sendTransaction({
@@ -202,12 +199,6 @@ describe("lost-and-found NonFungibleToken tests", () => {
             signers: [exampleNFTAdmin],
             limit: 9999
         })
-
-        let balancesAfter = await getAccountBalances([alice, exampleNFTAdmin, lostAndFoundAdmin, estimatorAdmin])
-        console.log({balances, balancesAfter})
-        let [balance, balanceErr] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
-        let [BalanceEstimator, errEstimator] = await executeScript("FlowToken/get_flow_token_balance", [estimatorAdmin])
-        expect(balanceErr).toBe(null)
 
         let [tx, redeemErr] = await sendTransaction({
             name: "ExampleNFT/redeem_example_nft_all",

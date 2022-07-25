@@ -32,7 +32,7 @@ export const setup = async () => {
     const logging = false;
 
     await init(basePath, {port});
-    await emulator.start(port, logging, "--transaction-fees");
+    await emulator.start(port, logging);
 
     alice = await getAccountAddress("Alice")
     exampleNFTAdmin = await getAccountAddress(ExampleNFT)
@@ -124,8 +124,8 @@ export const ensureDepositorSetup = async (account) => {
 export const getAccountBalances = async (accounts) => {
     const balances = {}
     await Promise.all(Array.from(accounts).map(async account => {
-        let [balance, err] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
-        let [availableBalance, aErr] = await executeScript("FlowToken/get_available_flow_balance", [exampleNFTAdmin])
+        let [balance, err] = await executeScript("FlowToken/get_flow_token_balance", [account])
+        let [availableBalance, aErr] = await executeScript("FlowToken/get_available_flow_balance", [account])
         balances[account] = {balance, availableBalance}
     }))
     return balances

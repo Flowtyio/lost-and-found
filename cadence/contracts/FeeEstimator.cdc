@@ -42,14 +42,20 @@ pub contract FeeEstimator {
     pub fun estimateDeposit(
         item: @AnyResource,
     ): @DepositEstimate {
-        let balanceBefore = FlowStorageFees.defaultTokenAvailableBalance(FeeEstimator.account.address)
+        let storageUsedBefore = FeeEstimator.account.storageUsed
         FeeEstimator.account.save(<-item, to: /storage/temp)
-        let balanceAfter = FlowStorageFees.defaultTokenAvailableBalance(FeeEstimator.account.address)
+        let storageUsedAfter = FeeEstimator.account.storageUsed
 
-        let storageFee = balanceBefore - balanceAfter
+        let storageDiff = storageUsedAfter - storageUsedBefore
+        let storageFee = FeeEstimator.storageUsedToFlowAmount(storageDiff)
         let loadedItem <- FeeEstimator.account.load<@AnyResource>(from: /storage/temp)!
         let estimate <- create DepositEstimate(item: <-loadedItem, storageFee: storageFee)
         return <- estimate
+    }
+
+    pub fun storageUsedToFlowAmount(_ storageUsed: UInt64): UFix64 {
+        let storageMB = FlowStorageFees.convertUInt64StorageBytesToUFix64Megabytes(storageUsed)
+        return FlowStorageFees.storageCapacityToFlow(storageMB)
     }
 
     init() {}
