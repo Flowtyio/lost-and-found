@@ -180,6 +180,9 @@ For contracts that are going to deposit things often and don't want to send flow
 or for consumers who are not permitted to access flow tokens in this way, you can also use the LostAndFound Depositor
 to maintain a pool of tokens and deposit through it.
 
+When creating the depositor, there is an optional second argument for `lowBalanceThreshold`. The depositor will
+check the balance against this value and emit an event when the balance is less than this value.
+
 ### Initialize the depositor
 ```cadence
 import LostAndFound from 0xf8d6e0586b0a20c7
@@ -191,7 +194,7 @@ transaction {
     prepare(acct: AuthAccount) {
         if acct.borrow<&LostAndFound.Depositor>(from: LostAndFound.DepositorStoragePath) == nil {
             let flowTokenRepayment = acct.getCapability<&FlowToken.Vault{FungibleToken.Receiver}>(/public/flowTokenReceiver)
-            let depositor <- LostAndFound.createDepositor(flowTokenRepayment)
+            let depositor <- LostAndFound.createDepositor(flowTokenRepayment, lowBalanceThreshold: 10.0)
             acct.save(<-depositor, to: LostAndFound.DepositorStoragePath)
             acct.link<&LostAndFound.Depositor{LostAndFound.DepositorPublic}>(LostAndFound.DepositorPublicPath, target: LostAndFound.DepositorStoragePath)
         }
