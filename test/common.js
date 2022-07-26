@@ -32,7 +32,7 @@ export const setup = async () => {
     const logging = false;
 
     await init(basePath, {port});
-    await emulator.start(port, logging);
+    await emulator.start(port, logging, "--transaction-fees");
 
     alice = await getAccountAddress("Alice")
     exampleNFTAdmin = await getAccountAddress(ExampleNFT)
@@ -97,7 +97,7 @@ export const cadenceContractTypeIdentifierGenerator = (addressWithOrWithoutPrefi
 }
 
 export const setupDepositor = async (account) => {
-    return await sendTransaction({name: "Depositor/setup", args: [], signers: [account]})
+    return await sendTransaction({name: "Depositor/setup", args: [null], signers: [account]})
 }
 
 export const addFlowTokensToDepositor = async (account, amount) => {

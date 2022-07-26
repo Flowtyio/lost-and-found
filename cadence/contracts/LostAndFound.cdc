@@ -370,6 +370,13 @@ pub contract LostAndFound {
             self.shelves <- {}
         }
 
+        pub fun ensureShelf(_ addr: Address, flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>?) {
+            if !self.shelves.containsKey(addr) {
+                let oldValue <- self.shelves.insert(key: addr, <- create Shelf(redeemer: addr, flowTokenRepayment: flowTokenRepayment))
+                destroy oldValue
+            }
+        }
+
         pub fun deposit(
             redeemer: Address,
             item: @AnyResource,
@@ -384,15 +391,13 @@ pub contract LostAndFound {
 
             let storageBefore = LostAndFound.account.storageUsed
 
-            // check if there is a shelf for this user
-            if !self.shelves.containsKey(redeemer) {
-                let oldValue <- self.shelves.insert(key: redeemer, <- create Shelf(redeemer: redeemer, flowTokenRepayment: flowTokenRepayment))
-                destroy oldValue
-            }
+            self.ensureShelf(redeemer, flowTokenRepayment: flowTokenRepayment)
             let ticket <- create Ticket(item: <-item, memo: memo, display: display, redeemer: redeemer, flowTokenRepayment: flowTokenRepayment)
             let shelf = self.borrowShelf(redeemer: redeemer)
             let flowTokenRepayment = ticket.flowTokenRepayment
             shelf!.deposit(ticket: <-ticket, flowTokenRepayment: flowTokenRepayment)
+            let storageUsedAfter = LostAndFound.account.storageUsed
+            let storageFee = FeeEstimator.storageUsedToFlowAmount(storageUsedAfter - storageBefore)
 
             let storagePaymentVault <- storagePayment.withdraw(amount: FeeEstimator.storageUsedToFlowAmount(LostAndFound.account.storageUsed - storageBefore))
             let receiver = LostAndFound.account
@@ -475,17 +480,25 @@ pub contract LostAndFound {
             memo: String?,
             display: MetadataViews.Display?
         ) {
+            let storageBefore = LostAndFound.account.storageUsed
             let ticket <- create Ticket(item: <-item, memo: memo, display: display, redeemer: redeemer, flowTokenRepayment: nil)
-            let depositEstimate <- FeeEstimator.estimateDeposit(item: <-ticket)
-            let storagePayment <- self.withdrawTokens(amount: depositEstimate.storageFee)
-            let tmp <- depositEstimate.withdraw() as! @LostAndFound.Ticket
-            let item <- tmp.takeItem()
-            destroy tmp
 
             let shelfManager = LostAndFound.borrowShelfManager()
-            shelfManager.deposit(redeemer: redeemer, item: <-item, memo: memo, display: display, storagePayment: <-storagePayment, flowTokenRepayment: self.flowTokenRepayment)
+            shelfManager.ensureShelf(redeemer, flowTokenRepayment: self.flowTokenRepayment)
+            let shelf = shelfManager.borrowShelf(redeemer: redeemer)
 
-            destroy depositEstimate
+            let flowTokenRepayment = ticket.flowTokenRepayment
+            shelf!.deposit(ticket: <-ticket, flowTokenRepayment: flowTokenRepayment)
+            
+            let storageUsedAfter = LostAndFound.account.storageUsed
+            let storageFee = FeeEstimator.storageUsedToFlowAmount(storageUsedAfter - storageBefore)
+
+            let storagePaymentVault <- self.withdrawTokens(amount: FeeEstimator.storageUsedToFlowAmount(LostAndFound.account.storageUsed - storageBefore))
+            let receiver = LostAndFound.account
+                .getCapability<&FlowToken.Vault{FungibleToken.Receiver}>(/public/flowTokenReceiver)
+                .borrow()!
+
+            receiver.deposit(from: <-storagePaymentVault)
         }
 
             pub fun trySendResource(
@@ -494,20 +507,19 @@ pub contract LostAndFound {
                 memo: String?,
                 display: MetadataViews.Display?
         ) {
-            let depositEstimate <- LostAndFound.estimateDeposit(redeemer: cap.address, item: <-item, memo: memo, display: display)
-            let storagePayment <- self.withdrawTokens(amount: depositEstimate.storageFee)
-            let resource <- depositEstimate.withdraw()
 
-            LostAndFound.trySendResource(
-                resource: <-resource,
-                cap: cap,
-                memo: memo,
-                display: display,
-                storagePayment: <-storagePayment,
-                flowTokenRepayment: self.flowTokenRepayment
-            )
-
-            destroy depositEstimate
+            if cap.check<&{NonFungibleToken.CollectionPublic}>() {
+                let nft <- item as! @NonFungibleToken.NFT
+                cap.borrow<&{NonFungibleToken.CollectionPublic}>()!.deposit(token: <-nft)
+            } else if cap.check<&{NonFungibleToken.Receiver}>() {
+                let nft <- item as! @NonFungibleToken.NFT
+                cap.borrow<&{NonFungibleToken.Receiver}>()!.deposit(token: <-nft)
+            } else if cap.check<&{FungibleToken.Receiver}>() {
+                let vault <- item as! @FungibleToken.Vault
+                cap.borrow<&{FungibleToken.Receiver}>()!.deposit(from: <-vault)
+            } else {
+                self.deposit(redeemer: cap.address, item: <-item, memo: memo, display: display)
+            }
         }
 
         pub fun withdrawTokens(amount: UFix64): @FungibleToken.Vault {
@@ -616,7 +628,6 @@ pub contract LostAndFound {
                 binFee = 0.00001
             }
         }
-
 
         let ftReceiver = LostAndFound.account.getCapability<&FlowToken.Vault{FungibleToken.Receiver}>(/public/flowTokenReceiver)
         let ticket <- create LostAndFound.Ticket(item: <-item, memo: memo, display: display, redeemer: redeemer, flowTokenRepayment: ftReceiver)
