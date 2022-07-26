@@ -348,8 +348,12 @@ pub contract LostAndFound {
                 emit BinDestroyed(redeemer: self.redeemer, type: type)
                 let storageAfter = LostAndFound.account.storageUsed
                 let provider = LostAndFound.getFlowProvider()
-                let vault <- provider.withdraw(amount: FeeEstimator.storageUsedToFlowAmount(storageBefore - storageAfter))
-                flowTokenRepayment!.borrow()!.deposit(from: <-vault)
+
+                if flowTokenRepayment != nil {
+                    let vault <- provider.withdraw(amount: FeeEstimator.storageUsedToFlowAmount(storageBefore - storageAfter))
+                    flowTokenRepayment!.borrow()!.deposit(from: <-vault)
+                }
+                
             }
         }
 
