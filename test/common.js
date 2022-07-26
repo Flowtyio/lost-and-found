@@ -97,7 +97,7 @@ export const cadenceContractTypeIdentifierGenerator = (addressWithOrWithoutPrefi
 }
 
 export const setupDepositor = async (account) => {
-    return await sendTransaction({name: "Depositor/setup", args: [null], signers: [account]})
+    return await sendTransaction({name: "Depositor/setup", args: [100.0], signers: [account]})
 }
 
 export const addFlowTokensToDepositor = async (account, amount) => {

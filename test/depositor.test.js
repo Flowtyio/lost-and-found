@@ -22,7 +22,7 @@ import {
 } from "./common";
 
 // Increase timeout if your tests failing due to timeout
-jest.setTimeout(100000);
+jest.setTimeout(10000);
 
 describe("lost-and-found Depositor tests", () => {
     let composeLostAndFoundTypeIdentifier, composeExampleNFTTypeIdentifier
