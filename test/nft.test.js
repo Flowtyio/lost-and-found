@@ -8,15 +8,15 @@ import {
     alice,
     before,
     cleanup,
-    delay,
+    delay, estimatorAdmin,
     ExampleNFT,
     exampleNFTAdmin,
-    exampleTokenAdmin, getEventFromTransaction,
+    exampleTokenAdmin, getAccountBalances, getEventFromTransaction,
     lostAndFoundAdmin
 } from "./common";
 
 // Increase timeout if your tests failing due to timeout
-jest.setTimeout(10000);
+jest.setTimeout(100000);
 
 // TODO: test for NonFungibleToken.Receiver being used instead of CollectionPublic
 describe("lost-and-found NonFungibleToken tests", () => {
@@ -60,7 +60,12 @@ describe("lost-and-found NonFungibleToken tests", () => {
     it("redeem ExampleNFT", async () => {
         await depositExampleNFT(alice)
         const signers = [alice]
-        let [tx, redeemErr] = await sendTransaction({name: "ExampleNFT/redeem_example_nft_all", args: [], signers, limit: 9999})
+        let [tx, redeemErr] = await sendTransaction({
+            name: "ExampleNFT/redeem_example_nft_all",
+            args: [],
+            signers,
+            limit: 9999
+        })
         expect(redeemErr).toBe(null)
         let [result, err] = await executeScript("ExampleNFT/get_account_ids", [alice])
         expect(result.length).toBe(1)
@@ -113,12 +118,14 @@ describe("lost-and-found NonFungibleToken tests", () => {
         let [_, idsErr] = await executeScript("ExampleNFT/get_account_ids", [alice])
         expect(idsErr.message.includes("unexpectedly found nil while forcing an Optional value")).toBe(true)
 
+        let balancesBefore = await getAccountBalances([alice, lostAndFoundAdmin, exampleNFTAdmin])
         let [sendRes, sendErr] = await sendTransaction({
             name: "ExampleNFT/try_send_example_nft",
             args: [alice],
             signers: [exampleNFTAdmin],
             limit: 9999
         })
+        let balancesAfter = await getAccountBalances([alice, lostAndFoundAdmin, exampleNFTAdmin])
         const eventType = `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`
         const event = getEventFromTransaction(sendRes, eventType)
         expect(sendErr).toBe(null)
@@ -172,5 +179,37 @@ describe("lost-and-found NonFungibleToken tests", () => {
         expect(found1).toBe(true)
         expect(found2).toBe(true)
         expect(found3).toBe(true)
+    })
+
+    it("should return all storage fees after redemption", async () => {
+        await cleanup(alice)
+        await sendTransaction({
+            name: "ExampleNFT/destroy_example_nft_storage",
+            signers: [alice],
+            args: [],
+            limit: 9999
+        })
+
+        let [beforeBalance, bErr] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
+        expect(bErr).toBe(null)
+
+        let [sendRes, sendErr] = await sendTransaction({
+            name: "ExampleNFT/mint_and_deposit_example_nfts",
+            args: [alice, 10],
+            signers: [exampleNFTAdmin],
+            limit: 9999
+        })
+
+        let [tx, redeemErr] = await sendTransaction({
+            name: "ExampleNFT/redeem_example_nft_all",
+            args: [],
+            signers: [alice],
+            limit: 9999
+        })
+        expect(redeemErr).toBe(null)
+
+        let [afterBalance, aErr] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
+        expect(aErr).toBe(null)
+        expect(beforeBalance).toBe(afterBalance)
     })
 })

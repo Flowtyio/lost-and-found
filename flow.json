@@ -7,6 +7,7 @@
 	},
 	"contracts": {
 		"LostAndFound": "./cadence/contracts/LostAndFound.cdc",
+		"FeeEstimator": "./cadence/contracts/FeeEstimator.cdc",
 		"ExampleNFT": "./cadence/contracts/ExampleNFT.cdc",
 		"ExampleToken": "./cadence/contracts/ExampleToken.cdc",
 		"MetadataViews": {
@@ -84,14 +85,16 @@
 				"MetadataViews",
 				"ExampleNFT",
 				"ExampleToken",
-				"LostAndFound"
+				"LostAndFound",
+				"FeeEstimator"
 			],
 			"emulator-sender": [],
 			"emulator-receiver": []
 		},
 		"testnet": {
 			"lost-and-found-testnet": [
-				"LostAndFound"
+				"LostAndFound",
+				"FeeEstimator"
 			]
 		}
 	},
