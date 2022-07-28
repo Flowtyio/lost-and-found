@@ -85,14 +85,16 @@
 				"MetadataViews",
 				"ExampleNFT",
 				"ExampleToken",
-				"LostAndFound"
+				"LostAndFound",
+				"FeeEstimator"
 			],
 			"emulator-sender": [],
 			"emulator-receiver": []
 		},
 		"testnet": {
 			"lost-and-found-testnet": [
-				"LostAndFound"
+				"LostAndFound",
+				"FeeEstimator"
 			]
 		}
 	},

@@ -374,11 +374,13 @@ pub contract LostAndFound {
             self.shelves <- {}
         }
 
-        pub fun ensureShelf(_ addr: Address, flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>?) {
+        pub fun ensureShelf(_ addr: Address, flowTokenRepayment: Capability<&FlowToken.Vault{FungibleToken.Receiver}>?): &LostAndFound.Shelf? {
             if !self.shelves.containsKey(addr) {
                 let oldValue <- self.shelves.insert(key: addr, <- create Shelf(redeemer: addr, flowTokenRepayment: flowTokenRepayment))
                 destroy oldValue
             }
+
+            return &self.shelves[addr] as &LostAndFound.Shelf?
         }
 
         pub fun deposit(
@@ -395,9 +397,8 @@ pub contract LostAndFound {
 
             let storageBefore = LostAndFound.account.storageUsed
 
-            self.ensureShelf(redeemer, flowTokenRepayment: flowTokenRepayment)
+            let shelf = self.ensureShelf(redeemer, flowTokenRepayment: flowTokenRepayment)
             let ticket <- create Ticket(item: <-item, memo: memo, display: display, redeemer: redeemer, flowTokenRepayment: flowTokenRepayment)
-            let shelf = self.borrowShelf(redeemer: redeemer)
             let flowTokenRepayment = ticket.flowTokenRepayment
             shelf!.deposit(ticket: <-ticket, flowTokenRepayment: flowTokenRepayment)
             let storageUsedAfter = LostAndFound.account.storageUsed
@@ -488,8 +489,7 @@ pub contract LostAndFound {
             let ticket <- create Ticket(item: <-item, memo: memo, display: display, redeemer: redeemer, flowTokenRepayment: nil)
 
             let shelfManager = LostAndFound.borrowShelfManager()
-            shelfManager.ensureShelf(redeemer, flowTokenRepayment: self.flowTokenRepayment)
-            let shelf = shelfManager.borrowShelf(redeemer: redeemer)
+            let shelf = shelfManager.ensureShelf(redeemer, flowTokenRepayment: self.flowTokenRepayment)
 
             let flowTokenRepayment = ticket.flowTokenRepayment
             shelf!.deposit(ticket: <-ticket, flowTokenRepayment: flowTokenRepayment)
