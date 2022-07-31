@@ -29,10 +29,8 @@ describe("lost-and-found NonFungibleToken tests", () => {
     });
 
     const depositExampleNFT = async (account) => {
-        const exampleNFTAddress = await getContractAddress("ExampleNFT")
-
         const args = [account]
-        const signers = [exampleNFTAddress]
+        const signers = [exampleNFTAdmin]
         let [tx, err] = await sendTransaction({name: "ExampleNFT/mint_and_deposit_example_nft", args, signers});
         return [tx, err]
     }
@@ -199,6 +197,8 @@ describe("lost-and-found NonFungibleToken tests", () => {
             signers: [exampleNFTAdmin],
             limit: 9999
         })
+
+        let [balanceAfterSend, baErr] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
 
         let [tx, redeemErr] = await sendTransaction({
             name: "ExampleNFT/redeem_example_nft_all",

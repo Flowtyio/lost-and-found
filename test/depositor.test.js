@@ -9,14 +9,9 @@ import {
     before,
     cadenceTypeIdentifierGenerator,
     cleanup,
-    delay,
-    destroyDepositor,
-    ensureDepositorSetup,
     ExampleNFT,
     exampleNFTAdmin,
-    exampleTokenAdmin,
-    getBalance,
-    getEventFromTransaction,
+    getEventFromTransaction, getEventsFromTransaction,
     LostAndFound,
     lostAndFoundAdmin
 } from "./common";
@@ -136,10 +131,14 @@ describe("lost-and-found Depositor tests", () => {
         let [tx, err] = await sendTransaction({name: "ExampleNFT/mint_and_deposit_with_depositor", args, signers});
         expect(err).toBe(null)
 
-        const depositorWithdrawEvent = getEventFromTransaction(tx, composeLostAndFoundTypeIdentifier("DepositorTokensWithdrawn"))
-        const tokens = Number(depositorWithdrawEvent.data.tokens)
-        const balance = Number(depositorWithdrawEvent.data.balance)
-        expect(tokens + balance).toBe(mintAmount)
+        const depositorWithdrawEvents = getEventsFromTransaction(tx, composeLostAndFoundTypeIdentifier("DepositorTokensWithdrawn"))
+        let tokensWithdrawn = 0.0
+        depositorWithdrawEvents.forEach(event => {
+            tokensWithdrawn += Number(event.data.tokens)
+        })
+
+        const balance = Number(depositorWithdrawEvents[depositorWithdrawEvents.length-1].data.balance)
+        expect(tokensWithdrawn + balance).toBe(mintAmount)
 
         const depositEvent = getEventFromTransaction(tx, composeLostAndFoundTypeIdentifier("TicketDeposited"))
         expect(depositEvent.data.type.typeID).toBe(composeExampleNFTTypeIdentifier("NFT"))

@@ -83,6 +83,16 @@ export const getEventFromTransaction = (txRes, eventType, throwError = true) => 
     }
 }
 
+export const getEventsFromTransaction = (txRes, eventType) => {
+    const events = []
+    for(let i = 0; i < txRes.events.length; i++) {
+        if(txRes.events[i].type === eventType) {
+            events.push(txRes.events[i])
+        }
+    }
+    return events
+}
+
 export const composeCadenceTypeIdentifier = (addressWithOrWithoutPrefix, contractName, typeName) => {
     const address = addressWithOrWithoutPrefix.startsWith('0x') ? addressWithOrWithoutPrefix.slice(2) : addressWithOrWithoutPrefix
     return `A.${address}.${contractName}.${typeName}`
