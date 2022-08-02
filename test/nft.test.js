@@ -211,5 +211,6 @@ describe("lost-and-found NonFungibleToken tests", () => {
         let [afterBalance, aErr] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
         expect(aErr).toBe(null)
         expect(beforeBalance).toBe(afterBalance)
+
     })
 })

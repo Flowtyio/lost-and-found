@@ -10,7 +10,7 @@ import {
     cadenceTypeIdentifierGenerator,
     cleanup,
     ExampleNFT,
-    exampleNFTAdmin,
+    exampleNFTAdmin, getAccountBalances,
     getEventFromTransaction, getEventsFromTransaction,
     LostAndFound,
     lostAndFoundAdmin
@@ -66,7 +66,7 @@ describe("lost-and-found Depositor tests", () => {
         return sendTransaction({name: "Depositor/destroy", args: [], signers: [account]})
     }
 
-    const getBalance = (account) => {
+    const getDepositorBalance = (account) => {
         return executeScript("Depositor/get_balance", [account])
     }
 
@@ -81,14 +81,14 @@ describe("lost-and-found Depositor tests", () => {
     it("should initialize a depositor", async () => {
         await ensureDepositorSetup(exampleNFTAdmin)
 
-        const [balance, balanceErr] = await getBalance(exampleNFTAdmin)
+        const [balance, balanceErr] = await getDepositorBalance(exampleNFTAdmin)
         expect(balanceErr).toBe(null)
         expect(Number(balance)).toBe(0)
     })
 
     it("should update Depositor balance", async () => {
         await ensureDepositorSetup(exampleNFTAdmin)
-        const [balanceBeforeRes, balanceBeforeErr] = await getBalance(exampleNFTAdmin)
+        const [balanceBeforeRes, balanceBeforeErr] = await getDepositorBalance(exampleNFTAdmin)
         expect(balanceBeforeErr).toBe(null)
         const balanceBefore = Number(balanceBeforeRes)
 
@@ -96,7 +96,7 @@ describe("lost-and-found Depositor tests", () => {
         await mintFlow(exampleNFTAdmin, mintAmount)
         await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
 
-        const [balanceAfterRes, balanceAfterErr] = await getBalance(exampleNFTAdmin)
+        const [balanceAfterRes, balanceAfterErr] = await getDepositorBalance(exampleNFTAdmin)
         expect(balanceAfterErr).toBe(null)
         const balanceAfter = Number(balanceAfterRes)
 
@@ -105,7 +105,7 @@ describe("lost-and-found Depositor tests", () => {
 
     it("should update Depositor balance from public account", async () => {
         await ensureDepositorSetup(exampleNFTAdmin)
-        const [balanceBeforeRes, balanceBeforeErr] = await getBalance(exampleNFTAdmin)
+        const [balanceBeforeRes, balanceBeforeErr] = await getDepositorBalance(exampleNFTAdmin)
         expect(balanceBeforeErr).toBe(null)
         const balanceBefore = Number(balanceBeforeRes)
 
@@ -113,7 +113,7 @@ describe("lost-and-found Depositor tests", () => {
         await mintFlow(alice, mintAmount)
         await addFlowTokensToDepositorPublic(alice, mintAmount, exampleNFTAdmin)
 
-        const [balanceAfterRes, balanceAfterErr] = await getBalance(exampleNFTAdmin)
+        const [balanceAfterRes, balanceAfterErr] = await getDepositorBalance(exampleNFTAdmin)
         expect(balanceAfterErr).toBe(null)
         const balanceAfter = Number(balanceAfterRes)
 
@@ -179,6 +179,49 @@ describe("lost-and-found Depositor tests", () => {
         let [idsAfter, idsAfterErr] = await executeScript("ExampleNFT/get_account_ids", [alice])
         expect(idsAfterErr).toBe(null)
         expect(idsAfter.length).toBe(1)
+    })
+
+    it("should refund all fees when withdrawn", async() => {
+        await ensureDepositorSetup(exampleNFTAdmin)
+        const mintAmount = 100
+        await mintFlow(exampleNFTAdmin, mintAmount)
+        await addFlowTokensToDepositor(exampleNFTAdmin, mintAmount)
+        let [flowBalanceBefore, fbbErr] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
+        let [depositorBalanceBefore, dbbErr] = await getDepositorBalance(exampleNFTAdmin)
+
+        const args = [alice]
+        const signers = [exampleNFTAdmin]
+        let [tx, err] = await sendTransaction({name: "ExampleNFT/mint_and_deposit_with_depositor", args, signers});
+        expect(err).toBe(null)
+
+        const depositorWithdrawEvents = getEventsFromTransaction(tx, composeLostAndFoundTypeIdentifier("DepositorTokensWithdrawn"))
+        let tokensWithdrawn = 0.0
+        depositorWithdrawEvents.forEach(event => {
+            tokensWithdrawn += Number(event.data.tokens)
+        })
+
+        const balance = Number(depositorWithdrawEvents[depositorWithdrawEvents.length-1].data.balance)
+        expect(tokensWithdrawn + balance).toBe(mintAmount)
+
+        const depositEvent = getEventFromTransaction(tx, composeLostAndFoundTypeIdentifier("TicketDeposited"))
+        expect(depositEvent.data.type.typeID).toBe(composeExampleNFTTypeIdentifier("NFT"))
+        expect(depositEvent.data.redeemer).toBe(alice)
+
+        // redeem them and make sure the total balance of in depositor + depositor flow balance is the same as before
+        // seems like events aren't paying back to the depositor for ticket redemption or bin destruction
+        let [redeemTx, redeemErr] = await sendTransaction({
+            name: "ExampleNFT/redeem_example_nft_all",
+            args: [],
+            signers: [alice],
+            limit: 9999
+        })
+        expect(redeemErr).toBe(null)
+
+        let [dBalance, dbErr] = await getDepositorBalance(exampleNFTAdmin)
+        let [fBalance, fbErr] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
+        expect(depositorBalanceBefore +  flowBalanceBefore).toEqual(dBalance + fBalance)
+        // this is here to ensure we do not checkin, there is a small difference in storage refunds but the reason why isn't clear
+        expect(false).toBeTruthy()
     })
 
     describe("DepositorBalanceLow event", () => {
