@@ -162,6 +162,7 @@ pub contract LostAndFound {
                 self.item == nil: "can only destroy if not holding any item"
             }
 
+            LostAndFound.storageFees.remove(key: self.uuid)
             destroy <-self.item
         }
     }
@@ -228,6 +229,7 @@ pub contract LostAndFound {
 
         destroy () {
             destroy <-self.tickets
+            LostAndFound.storageFees.remove(key: self.uuid)
         }
     }
 
@@ -327,34 +329,33 @@ pub contract LostAndFound {
             let uuid = ticket.uuid
             ticket.withdraw(receiver: receiver)
             let refundCap = ticket.flowTokenRepayment
-            destroy ticket
 
             if refundCap != nil && refundCap!.check() && LostAndFound.storageFees[uuid] != nil {
                 let refundProvider = LostAndFound.getFlowProvider()
                 let repaymentVault <- refundProvider.withdraw(amount: LostAndFound.storageFees[uuid]!)
                 refundCap!.borrow()!.deposit(from: <-repaymentVault)
-                LostAndFound.storageFees.remove(key: uuid)
             }
+            destroy ticket
 
             if borrowedBin.getTicketIDs().length == 0 {
                 let bin <- self.bins.remove(key: type.identifier)!
                 let uuid = bin.uuid
 
                 let flowTokenRepayment = bin.flowTokenRepayment
-                destroy bin
                 emit BinDestroyed(redeemer: self.redeemer, type: type)
                 let provider = LostAndFound.getFlowProvider()
 
                 if flowTokenRepayment != nil && LostAndFound.storageFees[uuid] != nil {
                     let vault <- provider.withdraw(amount: LostAndFound.storageFees[uuid]!)
                     flowTokenRepayment!.borrow()!.deposit(from: <-vault)
-                    LostAndFound.storageFees.remove(key: uuid)
                 }
+                destroy bin
             }
         }
 
         destroy () {
             destroy <- self.bins
+            LostAndFound.storageFees.remove(key: self.uuid)
         }
     }
 
@@ -410,7 +411,6 @@ pub contract LostAndFound {
             let bin = shelf.ensureBin(type: item.getType(), flowTokenRepayment: flowTokenRepayment)
             if LostAndFound.account.storageUsed != storageBeforeBin {
                 receiver.deposit(from: <-storagePayment.withdraw(amount: LostAndFound.storageFees[bin.uuid]!))
-                LostAndFound.storageFees.remove(key: bin.uuid)
             }
 
             let storageBefore = LostAndFound.account.storageUsed
@@ -452,14 +452,13 @@ pub contract LostAndFound {
             assert(shelf.getRedeemableTypes().length! == 0, message: "shelf still has redeemable types")
             let flowTokenRepayment = shelf.flowTokenRepayment
             let uuid = shelf.uuid
-            destroy shelf
-            emit ShelfDestroyed(redeemer: addr)
             if flowTokenRepayment != nil && flowTokenRepayment!.check() && LostAndFound.storageFees[uuid] != nil {
                 let provider = LostAndFound.getFlowProvider()
                 let vault <- provider.withdraw(amount: LostAndFound.storageFees[uuid]!)
                 flowTokenRepayment!.borrow()!.deposit(from: <-vault)
-                LostAndFound.storageFees.remove(key: uuid)
             }
+            destroy shelf
+            emit ShelfDestroyed(redeemer: addr)
         }
 
         destroy () {
