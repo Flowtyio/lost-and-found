@@ -410,6 +410,7 @@ pub contract LostAndFound {
             let bin = shelf.ensureBin(type: item.getType(), flowTokenRepayment: flowTokenRepayment)
             if LostAndFound.account.storageUsed != storageBeforeBin {
                 receiver.deposit(from: <-storagePayment.withdraw(amount: LostAndFound.storageFees[bin.uuid]!))
+                LostAndFound.storageFees.remove(key: bin.uuid)
             }
 
             let storageBefore = LostAndFound.account.storageUsed
