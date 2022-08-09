@@ -395,6 +395,7 @@ pub contract LostAndFound {
         ) {
             pre {
                 flowTokenRepayment == nil || flowTokenRepayment!.check(): "flowTokenRepayment is not valid"
+                storagePayment.getType() == Type<@FlowToken.Vault>(): "storage payment must be in flow tokens"
             }
             let receiver = LostAndFound.account
                 .getCapability<&FlowToken.Vault{FungibleToken.Receiver}>(/public/flowTokenReceiver)
@@ -691,6 +692,7 @@ pub contract LostAndFound {
     ) {
         pre {
             flowTokenRepayment == nil || flowTokenRepayment!.check(): "flowTokenRepayment is not valid"
+            storagePayment.getType() == Type<@FlowToken.Vault>(): "storage payment must be in flow tokens"
         }
 
         let shelfManager = LostAndFound.borrowShelfManager()
