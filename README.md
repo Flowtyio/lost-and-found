@@ -54,7 +54,6 @@ transaction(recipient: Address) {
     let minter: &ExampleNFT.NFTMinter
 
     prepare(acct: AuthAccount) {
-
         // borrow a reference to the NFTMinter resource in storage
         self.minter = acct.borrow<&ExampleNFT.NFTMinter>(from: /storage/exampleNFTMinter)
             ?? panic("Could not borrow a reference to the NFT minter")
@@ -62,7 +61,22 @@ transaction(recipient: Address) {
 
     execute {
         let token <- self.minter.mintAndReturnNFT(name: "testname", description: "descr", thumbnail: "image.html", royalties: [])
-        LostAndFound.deposit(redeemer: recipient, item: <-token, memo: "test memo")
+        let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?
+        let memo = "test memo"
+        let depositEstimate <- LostAndFound.estimateDeposit(redeemer: recipient, item: <-token, memo: memo, display: display)
+        let storageFee <- self.flowProvider.borrow()!.withdraw(amount: depositEstimate.storageFee)
+        let resource <- depositEstimate.withdraw()
+
+        LostAndFound.deposit(
+            redeemer: recipient,
+            item: <-resource,
+            memo: memo,
+            display: display,
+            storagePayment: <-storageFee,
+            flowTokenRepayment: self.flowReceiver
+        )
+
+        destroy depositEstimate
     }
 }
 ```
@@ -125,8 +139,21 @@ transaction(redeemer: Address, amount: UFix64) {
     execute {
         let minter <- self.tokenAdmin.createNewMinter(allowedAmount: amount)
         let mintedVault <- minter.mintTokens(amount: amount)
-        LostAndFound.deposit(redeemer: redeemer, item: <-mintedVault, memo: "hello!")
+        let memo = "test memo"
+        let depositEstimate <- LostAndFound.estimateDeposit(redeemer: redeemer, item: <-mintedVault, memo: memo, display: nil)
+        let storageFee <- self.flowProvider.borrow()!.withdraw(amount: depositEstimate.storageFee)
+        let resource <- depositEstimate.withdraw()
 
+        LostAndFound.deposit(
+            redeemer: redeemer,
+            item: <-resource,
+            memo: memo,
+            display: nil,
+            storagePayment: <-storageFee,
+            flowTokenRepayment: self.flowReceiver
+        )
+
+        destroy depositEstimate
         destroy minter
     }
 }
