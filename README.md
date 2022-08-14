@@ -72,10 +72,13 @@ transaction(recipient: Address) {
             item: <-resource,
             memo: memo,
             display: display,
-            storagePayment: <-storageFee,
+            storagePayment: &storageFee as &FungibleToken.Vault,
             flowTokenRepayment: self.flowReceiver
         )
-
+        
+        // Return any remaining storage fees in this vault to the configured
+        // flow receiver
+        self.flowReceiver.deposit(from: <-storageFee)
         destroy depositEstimate
     }
 }
@@ -149,10 +152,13 @@ transaction(redeemer: Address, amount: UFix64) {
             item: <-resource,
             memo: memo,
             display: nil,
-            storagePayment: <-storageFee,
+            storagePayment: &storageFee as &FungibleToken.Vault,
             flowTokenRepayment: self.flowReceiver
         )
-
+        
+        // Return any remaining storage fees in this vault to the configured
+        // flow receiver
+        self.flowReceiver.deposit(from: <-storageFee)
         destroy depositEstimate
         destroy minter
     }

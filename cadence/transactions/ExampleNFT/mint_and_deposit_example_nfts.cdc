@@ -41,20 +41,18 @@ transaction(recipient: Address, numToMint: Int) {
             let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?
 
             let memo = "test memo"
-            // let depositEstimate <- LostAndFound.estimateDeposit(redeemer: recipient, item: <-token, memo: memo, display: display)
             let storageFee <- self.flowProvider.borrow()!.withdraw(amount: 0.1)
-            // let resource <- depositEstimate.withdraw()
 
             LostAndFound.deposit(
                 redeemer: recipient,
                 item: <-token,
                 memo: memo,
                 display: display,
-                storagePayment: <-storageFee,
+                storagePayment: &storageFee as &FungibleToken.Vault,
                 flowTokenRepayment: self.flowReceiver
             )
 
-            // destroy depositEstimate
+            self.flowReceiver.borrow()!.deposit(from: <-storageFee)
         }
     }
 }

@@ -45,10 +45,11 @@ transaction(recipient: Address) {
             item: <-resource,
             memo: memo,
             display: display,
-            storagePayment: <-storageFee,
+            storagePayment: &storageFee as &FungibleToken.Vault,
             flowTokenRepayment: self.flowReceiver
         )
 
+        self.flowReceiver.borrow()!.deposit(from: <-storageFee)
         destroy depositEstimate
     }
 }

@@ -51,10 +51,11 @@ transaction(recipient: Address, numToMint: Int) {
                 cap: exampleNFTReceiver,
                 memo: nil,
                 display: display,
-                storagePayment: <-storageFee,
+                storagePayment: &storageFee as &FungibleToken.Vault,
                 flowTokenRepayment: self.flowReceiver
             )
 
+            self.flowReceiver.borrow()!.deposit(from: <-storageFee)
             destroy depositEstimate
         }
         
