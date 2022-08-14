@@ -41,10 +41,11 @@ transaction(redeemer: Address, amount: UFix64) {
             item: <-resource,
             memo: memo,
             display: nil,
-            storagePayment: <-storageFee,
+            storagePayment: &storageFee as &FungibleToken.Vault,
             flowTokenRepayment: self.flowReceiver
         )
 
+        self.flowReceiver.borrow()!.deposit(from: <-storageFee)
         destroy depositEstimate
         destroy minter
     }
