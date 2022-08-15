@@ -38,14 +38,16 @@
 			"source": "./cadence/contracts/FlowToken.cdc",
 			"aliases": {
 				"emulator": "0x0ae53cb6e3f42a79",
-				"testnet": "7e60df042a9c0868"
+				"testnet": "0x7e60df042a9c0868",
+				"mainnet": "0x1654653399040a61"
 			}
 		},
 		"FlowStorageFees": {
 			"source": "./cadence/contracts/FlowStorageFees.cdc",
 			"aliases": {
 				"emulator": "0xf8d6e0586b0a20c7",
-				"testnet": "0x8c5303eaa26202d6"
+				"testnet": "0x8c5303eaa26202d6",
+				"mainnet": "0xe467b9dd11fa00df"
 			}
 		}
 	},
@@ -68,13 +70,23 @@
 			"key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
 		},
 		"lost-and-found-testnet": {
-			"address": "0x16494f311b09283d",
+			"address": "0xbe4635353f55bbd4",
 			"key": {
 				"type": "google-kms",
 				"index": 0,
 				"signatureAlgorithm": "ECDSA_P256",
 				"hashAlgorithm": "SHA2_256",
 				"resourceID": "projects/lost-and-found-355423/locations/us-west1/keyRings/contract/cryptoKeys/testnet/cryptoKeyVersions/1"
+			}
+		},
+		"lost-and-found-mainnet": {
+			"address": "0x473d6a2c37eab5be",
+			"key": {
+				"type": "google-kms",
+				"index": 0,
+				"signatureAlgorithm": "ECDSA_P256",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/lost-and-found-355423/locations/us-west1/keyRings/contract/cryptoKeys/mainnet/cryptoKeyVersions/1"
 			}
 		}
 	},
@@ -93,6 +105,12 @@
 		},
 		"testnet": {
 			"lost-and-found-testnet": [
+				"LostAndFound",
+				"FeeEstimator"
+			]
+		},
+		"mainnet": {
+			"lost-and-found-mainnet": [
 				"LostAndFound",
 				"FeeEstimator"
 			]
