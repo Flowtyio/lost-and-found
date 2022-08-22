@@ -113,10 +113,6 @@ pub contract LostAndFound {
             return self.item != nil
         }
 
-        pub fun getTicketID() : UInt64 {
-            return self.uuid
-        }
-
         // If this is an instance of NFT, return the id , otherwise return nil
         pub fun getNonFungibleTokenID() : UInt64? {
             if self.type.isInstance(Type<@NonFungibleToken.NFT>()) {
