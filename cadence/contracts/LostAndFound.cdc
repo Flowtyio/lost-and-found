@@ -115,24 +115,20 @@ pub contract LostAndFound {
 
         // If this is an instance of NFT, return the id , otherwise return nil
         pub fun getNonFungibleTokenID() : UInt64? {
-            if self.type.isInstance(Type<@NonFungibleToken.NFT>()) {
-                let item <- self.item <- nil
-                let nft <- item as! @NonFungibleToken.NFT
-                let id = nft.id 
-                self.item <-! nft
-                return id
+            if self.type.isSubtype(of: Type<@NonFungibleToken.NFT>()) {
+                let ref = (&self.item as auth &AnyResource?)!
+                let nft = ref as! &NonFungibleToken.NFT
+                return nft.id
             }
             return nil
         }
 
         // If this is an instance of FT, return the vault balance , otherwise return nil
         pub fun getFungibleTokenBalance() : UFix64? {
-            if self.type.isInstance(Type<@FungibleToken.Vault>()) {
-                let item <- self.item <- nil
-                let vault <- item as! @FungibleToken.Vault
-                let balance = vault.balance 
-                self.item <-! vault
-                return balance
+            if self.type.isSubtype(of: Type<@FungibleToken.Vault>()) {
+                let ref = (&self.item as auth &AnyResource?)!
+                let ft = ref as! &FungibleToken.Vault
+                return ft.balance
             }
             return nil
         }
