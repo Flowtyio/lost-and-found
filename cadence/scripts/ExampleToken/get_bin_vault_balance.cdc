@@ -11,3 +11,4 @@ pub fun main(addr: Address, type: String): UFix64 {
     }
     return balance
 }
+ 

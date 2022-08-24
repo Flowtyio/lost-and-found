@@ -61,11 +61,15 @@
 			"address": "f8d6e0586b0a20c7",
 			"key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
 		},
-		"emulator-sender": {
+		"emulator-user1": {
 			"address": "01cf0e2f2f715450",
 			"key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
 		},
-		"emulator-receiver": {
+		"emulator-user2": {
+			"address": "179b6b1cb6755e31",
+			"key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
+		},
+		"emulator-user3": {
 			"address": "f3fcd2c1a78f5eee",
 			"key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
 		},
@@ -100,8 +104,9 @@
 				"LostAndFound",
 				"FeeEstimator"
 			],
-			"emulator-sender": [],
-			"emulator-receiver": []
+			"emulator-user1": [],
+			"emulator-user2": [],
+			"emulator-user3": []
 		},
 		"testnet": {
 			"lost-and-found-testnet": [
@@ -118,7 +123,8 @@
 	},
 	"emulatorAccounts": {
 		"emulator-account": "f8d6e0586b0a20c7",
-		"emulator-sender": "01cf0e2f2f715450",
-		"emulator-receiver": "f3fcd2c1a78f5eee"
+		"emulator-user1": "01cf0e2f2f715450",
+		"emulator-user2": "179b6b1cb6755e31",
+		"emulator-user3": "f3fcd2c1a78f5eee"
 	}
 }
