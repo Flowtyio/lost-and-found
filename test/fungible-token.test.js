@@ -233,4 +233,30 @@ describe("lost-and-found FungibleToken tests", () => {
         expect(balance2).toBe("200.00000000")
 
     })
+
+    it("should get the flow repayment address from script", async () => {
+        await cleanup(alice)
+        await addFlowTokensToDepositor(exampleTokenAdmin, 1)
+
+        const tokensToSend = 100.00000000
+        const tokenType = `A.${exampleTokenAdmin.substring(2)}.ExampleToken.Vault`
+        const [sendRes, sendErr] = await sendTransaction({
+            name: "ExampleToken/try_send_example_token_depositor",
+            args: [alice, tokensToSend],
+            signers: [exampleTokenAdmin],
+            limit: 9999
+        })
+        const eventType = `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`
+        const event = getEventFromTransaction(sendRes, eventType)
+        expect(event.data.redeemer).toBe(alice)
+        expect(event.data.type.typeID).toBe(`A.${exampleTokenAdmin.substring(2)}.ExampleToken.Vault`)
+        // expect(event.data.ticketID).toBe("dbieubfiewu")
+
+        const ticketID = event.data.ticketID
+
+        let [repaymentAddress, repaymentAddressErr] = await executeScript("get_flowRepayment_address", [alice, tokenType, ticketID])
+        expect(repaymentAddressErr).toBe(null)
+        expect(repaymentAddress).toBe(`${exampleTokenAdmin}`)
+
+    })
 })

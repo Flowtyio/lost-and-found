@@ -189,6 +189,8 @@ func TestFungibleToken(t *testing.T) {
 
 	})
 
+	ticketID := uint64(0)
+
 	// New script test
 	t.Run("should be able to get total vaults balance to a specific bin", func(t *testing.T) {
 		otu.cleanup("user1")
@@ -215,7 +217,7 @@ func TestFungibleToken(t *testing.T) {
 			AssertWant(t, autogold.Want("should be equal to total sum 100", tokensToSend))
 
 		// Send in 100.0 more token to user 1's Lost and Found bin
-		otu.O.Tx("ExampleToken/try_send_example_token",
+		tID, err := otu.O.Tx("ExampleToken/try_send_example_token",
 			WithSigner("account"),
 			WithArg("recipient", "user1"),
 			WithArg("amount", tokensToSend),
@@ -224,7 +226,12 @@ func TestFungibleToken(t *testing.T) {
 			AssertEvent(t, "TicketDeposited", map[string]interface{}{
 				"type":     "A.f8d6e0586b0a20c7.ExampleToken.Vault",
 				"redeemer": otu.O.Address("user1"),
-			})
+			}).
+			GetIdFromEvent("TicketDeposited", "ticketID")
+
+		assert.NoError(t, err)
+
+		ticketID = tID
 
 		// query the bin's balance. Assert it to be 200
 		otu.O.Script("ExampleToken/get_bin_vault_balance",
@@ -232,6 +239,18 @@ func TestFungibleToken(t *testing.T) {
 			WithArg("type", "A.f8d6e0586b0a20c7.ExampleToken.Vault"),
 		).
 			AssertWant(t, autogold.Want("should be equal to total sum 200", tokensToSend*2))
+
+	})
+
+	t.Run("should get the flow repayment address from script", func(t *testing.T) {
+
+		// query the bin's balance. Assert it to be 100
+		otu.O.Script("get_flowRepayment_address",
+			WithArg("addr", "user1"),
+			WithArg("type", "A.f8d6e0586b0a20c7.ExampleToken.Vault"),
+			WithArg("ticketID", ticketID),
+		).
+			AssertWant(t, autogold.Want("should get admin account address", otu.O.Address("account")))
 
 	})
 

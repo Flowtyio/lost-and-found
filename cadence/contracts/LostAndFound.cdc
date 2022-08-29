@@ -113,6 +113,11 @@ pub contract LostAndFound {
             return self.item != nil
         }
 
+        // A function to get depositor address / flow Repayment address
+        pub fun getFlowRepaymentAddress() : Address? {
+            return self.flowTokenRepayment?.address
+        }
+
         // If this is an instance of NFT, return the id , otherwise return nil
         pub fun getNonFungibleTokenID() : UInt64? {
             if self.type.isSubtype(of: Type<@NonFungibleToken.NFT>()) {
