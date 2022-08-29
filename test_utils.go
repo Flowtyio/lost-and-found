@@ -2,6 +2,7 @@ package test_main
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	. "github.com/bjartek/overflow"
@@ -26,7 +27,19 @@ func NewOverflowTest(t *testing.T) *OverflowTestUtils {
 	}
 }
 
-func (o *OverflowTestUtils) setupDepositor(user string) *OverflowTestUtils {
+func GetBalanceFromEvents(o OverflowResult) float64 {
+	var balance float64
+	for name, events := range o.Events {
+		if strings.HasSuffix(name, "TokensWithdrawn") {
+			for _, event := range events {
+				balance = balance + event.Fields["amount"].(float64)
+			}
+		}
+	}
+	return balance
+}
+
+func (o *OverflowTestUtils) setupDepositor(user string, lowBalanceThreshold float64) *OverflowTestUtils {
 
 	// destroy Depositor if any
 	o.O.Tx("Depositor/destroy",
@@ -34,13 +47,23 @@ func (o *OverflowTestUtils) setupDepositor(user string) *OverflowTestUtils {
 	).
 		AssertSuccess(o.T)
 
-	// setup Depositor
-	o.O.Tx("Depositor/setup",
-		WithSigner(user),
-		WithArg("lowBalanceThreshold", nil),
-	).
-		AssertSuccess(o.T).
-		AssertEmitEventName(o.T, "DepositorCreated")
+	if lowBalanceThreshold == 0.0 {
+		// setup Depositor
+		o.O.Tx("Depositor/setup",
+			WithSigner(user),
+			WithArg("lowBalanceThreshold", nil),
+		).
+			AssertSuccess(o.T).
+			AssertEmitEventName(o.T, "DepositorCreated")
+	} else {
+		// setup Depositor
+		o.O.Tx("Depositor/setup",
+			WithSigner(user),
+			WithArg("lowBalanceThreshold", lowBalanceThreshold),
+		).
+			AssertSuccess(o.T).
+			AssertEmitEventName(o.T, "DepositorCreated")
+	}
 
 	return o
 }
@@ -126,4 +149,66 @@ func (o *OverflowTestUtils) assertExampleNFTLength(user string, length uint64) *
 	assert.Equal(o.T, len(result), length)
 
 	return o
+}
+
+func (o *OverflowTestUtils) depositExampleToken(user string, amount float64) *OverflowTestUtils {
+
+	o.O.Tx("ExampleToken/deposit_example_token",
+		WithSigner("account"),
+		WithArg("redeemer", user),
+		WithArg("amount", amount),
+	).
+		AssertSuccess(o.T)
+
+	return o
+}
+
+func (o *OverflowTestUtils) configureExampleToken(user string) *OverflowTestUtils {
+
+	o.O.Tx("ExampleToken/setup_vault",
+		WithSigner(user),
+	).
+		AssertSuccess(o.T)
+
+	return o
+}
+
+func (o *OverflowTestUtils) depositExampleNFT(user string) *OverflowTestUtils {
+
+	o.O.Tx("ExampleNFT/mint_and_deposit_example_nft",
+		WithSigner("account"),
+		WithArg("recipient", user),
+	).
+		AssertSuccess(o.T)
+
+	return o
+}
+
+func (o *OverflowTestUtils) depositExampleNFTs(user string, amount uint64) *OverflowTestUtils {
+
+	o.O.Tx("ExampleNFT/mint_and_deposit_example_nfts",
+		WithSigner("account"),
+		WithArg("recipient", user),
+		WithArg("numToMint", amount),
+	).
+		AssertSuccess(o.T)
+
+	return o
+}
+
+func (o *OverflowTestUtils) depositExampleNFTandGetID(user string) uint64 {
+
+	res, err := o.O.Tx("ExampleNFT/mint_and_deposit_example_nft",
+		WithSigner("account"),
+		WithArg("recipient", user),
+	).
+		AssertSuccess(o.T).
+		GetIdFromEvent("LostAndFound.TicketDeposited", "ticketID")
+
+	if err != nil {
+		panic(err)
+	}
+
+	return res
+
 }
