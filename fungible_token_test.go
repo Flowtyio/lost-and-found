@@ -32,9 +32,7 @@ func TestFungibleToken(t *testing.T) {
 			}).
 			GetIdFromEvent("TicketDeposited", "ticketID")
 
-		if err != nil {
-			panic(err)
-		}
+		assert.NoError(t, err)
 
 		assert.Greater(t, ticketID, uint64(0))
 
@@ -61,9 +59,7 @@ func TestFungibleToken(t *testing.T) {
 		).
 			GetAsInterface()
 
-		if err != nil {
-			panic(err)
-		}
+		assert.NoError(t, err)
 
 		assert.GreaterOrEqual(t, balance.(float64), depositAmount)
 
@@ -87,9 +83,7 @@ func TestFungibleToken(t *testing.T) {
 		).
 			GetAsInterface()
 
-		if err != nil {
-			panic(err)
-		}
+		assert.NoError(t, err)
 
 		otu.O.Tx("ExampleToken/try_send_example_token",
 			WithSigner("account"),

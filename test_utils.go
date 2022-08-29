@@ -130,9 +130,7 @@ func (o *OverflowTestUtils) assertExampleNFTLength(user string, length uint64) *
 	).
 		GetAsInterface()
 
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(o.T, err)
 
 	if length == 0 {
 		assert.Equal(o.T, res, nil)
@@ -205,9 +203,7 @@ func (o *OverflowTestUtils) depositExampleNFTandGetID(user string) uint64 {
 		AssertSuccess(o.T).
 		GetIdFromEvent("LostAndFound.TicketDeposited", "ticketID")
 
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(o.T, err)
 
 	return res
 
