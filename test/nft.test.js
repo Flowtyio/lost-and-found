@@ -31,7 +31,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
     const depositExampleNFT = async (account) => {
         const args = [account]
         const signers = [exampleNFTAdmin]
-        let [tx, err] = await sendTransaction({name: "ExampleNFT/mint_and_deposit_example_nft", args, signers});
+        let [tx, err] = await sendTransaction({ name: "ExampleNFT/mint_and_deposit_example_nft", args, signers });
         return [tx, err]
     }
 
@@ -41,7 +41,7 @@ describe("lost-and-found NonFungibleToken tests", () => {
         await delay(1000)
         const args = [alice]
         const signers = [exampleNFTAddress]
-        let [tx, err] = await sendTransaction({name: "ExampleNFT/mint_and_deposit_example_nft", args, signers});
+        let [tx, err] = await sendTransaction({ name: "ExampleNFT/mint_and_deposit_example_nft", args, signers });
         expect(err).toBe(null)
 
         const [redeemableTypes, redeemableTypesErr] = await executeScript("get_redeemable_types_for_addr", [alice])
@@ -211,6 +211,26 @@ describe("lost-and-found NonFungibleToken tests", () => {
         let [afterBalance, aErr] = await executeScript("FlowToken/get_flow_token_balance", [exampleNFTAdmin])
         expect(aErr).toBe(null)
         expect(beforeBalance).toBe(afterBalance)
+
+    })
+
+
+    it("should return all ids of a specific NFT type in Bin", async () => {
+        await cleanup(alice)
+
+        let [sendRes, sendErr] = await sendTransaction({
+            name: "ExampleNFT/mint_and_deposit_example_nfts",
+            args: [alice, 10],
+            signers: [exampleNFTAdmin],
+            limit: 9999
+        })
+        expect(sendErr).toBe(null)
+
+        const nftType = `A.${exampleNFTAdmin.substring(2)}.ExampleNFT.NFT`
+
+        let [ids, aErr] = await executeScript("ExampleNFT/get_bin_nft_id", [alice, nftType])
+        expect(aErr).toBe(null)
+        expect(ids.length).toBe(10)
 
     })
 })
