@@ -161,16 +161,6 @@ func (o *OverflowTestUtils) depositExampleToken(user string, amount float64) *Ov
 	return o
 }
 
-func (o *OverflowTestUtils) configureExampleToken(user string) *OverflowTestUtils {
-
-	o.O.Tx("ExampleToken/setup_vault",
-		WithSigner(user),
-	).
-		AssertSuccess(o.T)
-
-	return o
-}
-
 func (o *OverflowTestUtils) depositExampleNFT(user string) *OverflowTestUtils {
 
 	o.O.Tx("ExampleNFT/mint_and_deposit_example_nft",
@@ -192,19 +182,4 @@ func (o *OverflowTestUtils) depositExampleNFTs(user string, amount uint64) *Over
 		AssertSuccess(o.T)
 
 	return o
-}
-
-func (o *OverflowTestUtils) depositExampleNFTandGetID(user string) uint64 {
-
-	res, err := o.O.Tx("ExampleNFT/mint_and_deposit_example_nft",
-		WithSigner("account"),
-		WithArg("recipient", user),
-	).
-		AssertSuccess(o.T).
-		GetIdFromEvent("LostAndFound.TicketDeposited", "ticketID")
-
-	assert.NoError(o.T, err)
-
-	return res
-
 }
