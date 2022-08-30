@@ -12,7 +12,10 @@ pub contract LostAndFoundHelper {
         pub let type: Type
         pub let typeIdentifier: String
         // State maintained by LostAndFound
-        pub var redeemed: Bool
+        pub let redeemed: Bool
+        pub let name : String?
+        pub let description : String?
+        pub let thumbnail : String?
 
         init(_ ticket: &LostAndFound.Ticket) {
             self.memo = ticket.memo 
@@ -20,6 +23,9 @@ pub contract LostAndFoundHelper {
             self.type = ticket.type 
             self.typeIdentifier = ticket.type.identifier
             self.redeemed = ticket.redeemed 
+            self.name = ticket.display?.name
+            self.description = ticket.display?.description
+            self.thumbnail = ticket.display?.thumbnail?.uri()
         }
 
     }
