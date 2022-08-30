@@ -16,8 +16,9 @@ pub contract LostAndFoundHelper {
         pub let name : String?
         pub let description : String?
         pub let thumbnail : String?
+        pub let ticketID : UInt64?
 
-        init(_ ticket: &LostAndFound.Ticket) {
+        init(_ ticket: &LostAndFound.Ticket, id: UInt64?) {
             self.memo = ticket.memo 
             self.redeemer = ticket.redeemer 
             self.type = ticket.type 
@@ -26,13 +27,14 @@ pub contract LostAndFoundHelper {
             self.name = ticket.display?.name
             self.description = ticket.display?.description
             self.thumbnail = ticket.display?.thumbnail?.uri()
+            self.ticketID = id
         }
 
     }
 
-    pub fun constructResult(_ ticket: &LostAndFound.Ticket?) : LostAndFoundHelper.Ticket? {
+    pub fun constructResult(_ ticket: &LostAndFound.Ticket?, id:UInt64?) : LostAndFoundHelper.Ticket? {
         if ticket != nil {
-            return LostAndFoundHelper.Ticket(ticket!)
+            return LostAndFoundHelper.Ticket(ticket!, id: id)
         }
         return nil
     }

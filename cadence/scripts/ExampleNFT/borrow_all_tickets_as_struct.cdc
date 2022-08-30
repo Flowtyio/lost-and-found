@@ -5,7 +5,7 @@ pub fun main(addr: Address): [LostAndFoundHelper.Ticket] {
 
     let res : [LostAndFoundHelper.Ticket] = []
     for ticket in  LostAndFound.borrowAllTickets(addr: addr) {
-        if let t = LostAndFoundHelper.constructResult(ticket) {
+        if let t = LostAndFoundHelper.constructResult(ticket, id: nil) {
             res.append(t)
         }
     }

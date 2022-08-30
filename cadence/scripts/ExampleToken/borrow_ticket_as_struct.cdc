@@ -10,5 +10,5 @@ pub fun main(addr: Address, ticketID: UInt64): LostAndFoundHelper.Ticket? {
     let bin = shelf!.borrowBin(type: Type<@ExampleToken.Vault>())!
 
     let ticket = bin.borrowTicket(id: ticketID)
-    return LostAndFoundHelper.constructResult(ticket)
+    return LostAndFoundHelper.constructResult(ticket, id: ticketID)
 }
