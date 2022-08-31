@@ -118,7 +118,8 @@
 		"testnet": {
 			"lost-and-found-testnet": [
 				"LostAndFound",
-				"FeeEstimator"
+				"FeeEstimator",
+				"LostAndFoundHelper"
 			]
 		},
 		"mainnet": {

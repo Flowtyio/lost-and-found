@@ -12,6 +12,7 @@ func TestFungibleToken(t *testing.T) {
 
 	otu := NewOverflowTest(t)
 	depositAmount := 1000.0
+	ExampleTokenVaultType := "A.f8d6e0586b0a20c7.ExampleToken.Vault"
 
 	t.Run("deposit ExampleToken", func(t *testing.T) {
 
@@ -28,7 +29,7 @@ func TestFungibleToken(t *testing.T) {
 			signer,
 		).
 			AssertEvent(t, "TicketDeposited", map[string]interface{}{
-				"type": "A.f8d6e0586b0a20c7.ExampleToken.Vault",
+				"type": ExampleTokenVaultType,
 			}).
 			GetIdFromEvent("TicketDeposited", "ticketID")
 
@@ -41,7 +42,7 @@ func TestFungibleToken(t *testing.T) {
 			WithArg("ticketID", ticketID),
 		).
 			AssertWithPointer(t, "/redeemer", otu.O.Address("user1")).
-			AssertWithPointer(t, "/type", "A.f8d6e0586b0a20c7.ExampleToken.Vault")
+			AssertWithPointer(t, "/type", ExampleTokenVaultType)
 
 	})
 
@@ -115,9 +116,10 @@ func TestFungibleToken(t *testing.T) {
 		).
 			GetAsInterface()
 
-		assert.Error(t, err)
 		if err != nil {
 			assert.Contains(t, err.Error(), "unexpectedly found nil while forcing an Optional value")
+		} else {
+			assert.Error(t, err)
 		}
 
 		otu.O.Tx("ExampleToken/try_send_example_token",
@@ -127,7 +129,7 @@ func TestFungibleToken(t *testing.T) {
 		).
 			AssertSuccess(t).
 			AssertEvent(t, "TicketDeposited", map[string]interface{}{
-				"type":     "A.f8d6e0586b0a20c7.ExampleToken.Vault",
+				"type":     ExampleTokenVaultType,
 				"redeemer": otu.O.Address("user1"),
 			})
 
@@ -177,16 +179,14 @@ func TestFungibleToken(t *testing.T) {
 		).
 			AssertSuccess(t).
 			AssertEvent(t, "TicketDeposited", map[string]interface{}{
-				"type":     "A.f8d6e0586b0a20c7.ExampleToken.Vault",
+				"type":     ExampleTokenVaultType,
 				"redeemer": otu.O.Address("user1"),
 			})
 
 	})
 
-	ticketID := uint64(0)
-
 	// New script test
-	t.Run("should be able to get total vaults balance to a specific bin", func(t *testing.T) {
+	t.Run("should be able to get total vaults balance to a specific bin and get flow repayment address by script", func(t *testing.T) {
 		otu.cleanup("user1")
 
 		tokensToSend := 100.0
@@ -199,14 +199,14 @@ func TestFungibleToken(t *testing.T) {
 		).
 			AssertSuccess(t).
 			AssertEvent(t, "TicketDeposited", map[string]interface{}{
-				"type":     "A.f8d6e0586b0a20c7.ExampleToken.Vault",
+				"type":     ExampleTokenVaultType,
 				"redeemer": otu.O.Address("user1"),
 			})
 
 		// query the bin's balance. Assert it to be 100
 		otu.O.Script("ExampleToken/get_bin_vault_balance",
 			WithArg("addr", "user1"),
-			WithArg("type", "A.f8d6e0586b0a20c7.ExampleToken.Vault"),
+			WithArg("type", ExampleTokenVaultType),
 		).
 			AssertWant(t, autogold.Want("should be equal to total sum 100", tokensToSend))
 
@@ -218,31 +218,25 @@ func TestFungibleToken(t *testing.T) {
 		).
 			AssertSuccess(t).
 			AssertEvent(t, "TicketDeposited", map[string]interface{}{
-				"type":     "A.f8d6e0586b0a20c7.ExampleToken.Vault",
+				"type":     ExampleTokenVaultType,
 				"redeemer": otu.O.Address("user1"),
 			}).
 			GetIdFromEvent("TicketDeposited", "ticketID")
 
 		assert.NoError(t, err)
 
-		ticketID = tID
-
 		// query the bin's balance. Assert it to be 200
 		otu.O.Script("ExampleToken/get_bin_vault_balance",
 			WithArg("addr", "user1"),
-			WithArg("type", "A.f8d6e0586b0a20c7.ExampleToken.Vault"),
+			WithArg("type", ExampleTokenVaultType),
 		).
 			AssertWant(t, autogold.Want("should be equal to total sum 200", tokensToSend*2))
-
-	})
-
-	t.Run("should get the flow repayment address from script", func(t *testing.T) {
 
 		// query the bin's balance. Assert it to be 100
 		otu.O.Script("get_flowRepayment_address",
 			WithArg("addr", "user1"),
-			WithArg("type", "A.f8d6e0586b0a20c7.ExampleToken.Vault"),
-			WithArg("ticketID", ticketID),
+			WithArg("type", ExampleTokenVaultType),
+			WithArg("ticketID", tID),
 		).
 			AssertWant(t, autogold.Want("should get admin account address", otu.O.Address("account")))
 
