@@ -11,8 +11,8 @@ import (
 func TestNonFungibleToken(t *testing.T) {
 
 	otu := NewOverflowTest(t)
-	// depositAmount := 1000.0
 	user := "user1"
+	exampleNFTType := "A.f8d6e0586b0a20c7.ExampleNFT.NFT"
 
 	t.Run("deposit ExampleToken", func(t *testing.T) {
 
@@ -22,7 +22,7 @@ func TestNonFungibleToken(t *testing.T) {
 			WithArg("addr", user),
 		).
 			AssertWithPointerWant(t, "/0", autogold.Want("should be with Example NFT Type",
-				"A.f8d6e0586b0a20c7.ExampleNFT.NFT",
+			exampleNFTType,
 			))
 
 	})
@@ -95,9 +95,10 @@ func TestNonFungibleToken(t *testing.T) {
 		).
 			GetAsInterface()
 
-		assert.Error(t, err)
 		if err != nil {
 			assert.Contains(t, err.Error(), "unexpectedly found nil while forcing an Optional value")
+		} else {
+			assert.Error(t, err)
 		}
 
 		otu.O.Tx("ExampleNFT/mint_and_deposit_example_nft",
@@ -107,7 +108,7 @@ func TestNonFungibleToken(t *testing.T) {
 			AssertSuccess(t).
 			AssertEvent(t, "LostAndFound.TicketDeposited", map[string]interface{}{
 				"redeemer":    otu.O.Address(user),
-				"type":        "A.f8d6e0586b0a20c7.ExampleNFT.NFT",
+				"type":        exampleNFTType,
 				"name":        "testname",
 				"description": "descr",
 				"thumbnail":   "image.html",
@@ -175,7 +176,7 @@ func TestNonFungibleToken(t *testing.T) {
 
 		res, err := otu.O.Script("ExampleNFT/get_bin_nft_id",
 			WithArg("addr", user),
-			WithArg("type", "A.f8d6e0586b0a20c7.ExampleNFT.NFT"),
+			WithArg("type", exampleNFTType),
 		).
 			GetAsInterface()
 

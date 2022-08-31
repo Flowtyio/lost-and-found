@@ -1,4 +1,4 @@
-module github.com/findonflow/lost-and-found
+module github.com/flowtyio/lost-and-found
 
 go 1.18
 
