@@ -125,7 +125,8 @@
 		"mainnet": {
 			"lost-and-found-mainnet": [
 				"LostAndFound",
-				"FeeEstimator"
+				"FeeEstimator",
+				"LostAndFoundHelper"
 			]
 		}
 	},
