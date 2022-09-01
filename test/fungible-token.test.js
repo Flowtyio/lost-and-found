@@ -250,7 +250,6 @@ describe("lost-and-found FungibleToken tests", () => {
         const event = getEventFromTransaction(sendRes, eventType)
         expect(event.data.redeemer).toBe(alice)
         expect(event.data.type.typeID).toBe(`A.${exampleTokenAdmin.substring(2)}.ExampleToken.Vault`)
-        // expect(event.data.ticketID).toBe("dbieubfiewu")
 
         const ticketID = event.data.ticketID
 
