@@ -34,20 +34,20 @@ describe("lost-and-found FungibleToken tests", () => {
 
         const args = [account, amount]
         const signers = [exampleTokenAddress]
-        let [tx, err] = await sendTransaction({name: "ExampleToken/deposit_example_token", args, signers});
+        let [tx, err] = await sendTransaction({ name: "ExampleToken/deposit_example_token", args, signers });
         return [tx, err]
     }
 
     const configureExampleToken = async (account) => {
         const signers = [account]
-        let [tx, err] = await sendTransaction({name: "ExampleToken/setup_vault", args: [], signers})
+        let [tx, err] = await sendTransaction({ name: "ExampleToken/setup_vault", args: [], signers })
         return [tx, err]
     }
 
     test("deposit ExampleToken", async () => {
         const args = [alice, depositAmount]
         const signers = [exampleTokenAdmin]
-        let [tx, err] = await sendTransaction({name: "ExampleToken/deposit_example_token", args, signers});
+        let [tx, err] = await sendTransaction({ name: "ExampleToken/deposit_example_token", args, signers });
         expect(err).toBe(null)
 
         let result
@@ -95,7 +95,7 @@ describe("lost-and-found FungibleToken tests", () => {
         expect(found).toBe(false)
     })
 
-    test("send ExampleToken with setup", async() => {
+    test("send ExampleToken with setup", async () => {
         let [_, setupErr] = await sendTransaction({
             name: "ExampleToken/setup_account_ft",
             args: [],
@@ -125,7 +125,7 @@ describe("lost-and-found FungibleToken tests", () => {
         expect(Number(balanceAfter)).toBe(depositAmount + Number(balance))
     })
 
-    test("send ExampleToken without setup", async() => {
+    test("send ExampleToken without setup", async () => {
         await sendTransaction({
             name: "ExampleToken/destroy_example_token_storage",
             signers: [alice],
@@ -197,5 +197,65 @@ describe("lost-and-found FungibleToken tests", () => {
         expect(sendErr).toBe(null)
         expect(event.data.redeemer).toBe(alice)
         expect(event.data.type.typeID).toBe(`A.${exampleTokenAdmin.substring(2)}.ExampleToken.Vault`)
+    })
+
+    it("should be able to get total vaults balance to a specific bin", async () => {
+        await cleanup(alice)
+        await addFlowTokensToDepositor(exampleTokenAdmin, 1)
+
+        const tokensToSend = 100.00000000
+        const tokenType = `A.${exampleTokenAdmin.substring(2)}.ExampleToken.Vault`
+        const [sendRes, sendErr] = await sendTransaction({
+            name: "ExampleToken/try_send_example_token_depositor",
+            args: [alice, tokensToSend],
+            signers: [exampleTokenAdmin],
+            limit: 9999
+        })
+        const eventType = `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`
+        const event = getEventFromTransaction(sendRes, eventType)
+        expect(event.data.redeemer).toBe(alice)
+        expect(event.data.type.typeID).toBe(`A.${exampleTokenAdmin.substring(2)}.ExampleToken.Vault`)
+
+        let [balance, balanceErr] = await executeScript("ExampleToken/get_bin_vault_balance", [alice, tokenType])
+        expect(balanceErr).toBe(null)
+        expect(balance).toBe("100.00000000")
+
+        const [sendRes2, sendErr2] = await sendTransaction({
+            name: "ExampleToken/try_send_example_token_depositor",
+            args: [alice, tokensToSend],
+            signers: [exampleTokenAdmin],
+            limit: 9999
+        })
+        expect(sendErr2).toBe(null)
+
+        let [balance2, balanceErr2] = await executeScript("ExampleToken/get_bin_vault_balance", [alice, tokenType])
+        expect(balanceErr2).toBe(null)
+        expect(balance2).toBe("200.00000000")
+
+    })
+
+    it("should get the flow repayment address from script", async () => {
+        await cleanup(alice)
+        await addFlowTokensToDepositor(exampleTokenAdmin, 1)
+
+        const tokensToSend = 100.00000000
+        const tokenType = `A.${exampleTokenAdmin.substring(2)}.ExampleToken.Vault`
+        const [sendRes, sendErr] = await sendTransaction({
+            name: "ExampleToken/try_send_example_token_depositor",
+            args: [alice, tokensToSend],
+            signers: [exampleTokenAdmin],
+            limit: 9999
+        })
+        const eventType = `A.${lostAndFoundAdmin.substring(2)}.LostAndFound.TicketDeposited`
+        const event = getEventFromTransaction(sendRes, eventType)
+        expect(event.data.redeemer).toBe(alice)
+        expect(event.data.type.typeID).toBe(`A.${exampleTokenAdmin.substring(2)}.ExampleToken.Vault`)
+
+        const ticketID = event.data.ticketID
+
+        let [repaymentAddress, repaymentAddressErr] = await executeScript("get_flowRepayment_address", [alice, tokenType, ticketID])
+        expect(repaymentAddressErr).toBe(null)
+        expect(repaymentAddress).toBe(`${exampleTokenAdmin}`)
+
     })
 })
