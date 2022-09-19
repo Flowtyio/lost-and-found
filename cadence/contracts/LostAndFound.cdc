@@ -148,10 +148,15 @@ pub contract LostAndFound {
             let cap = receiver.borrow<&AnyResource>()!
 
             if cap.isInstance(Type<@NonFungibleToken.Collection>()) {
-                let target = receiver.borrow<&AnyResource{NonFungibleToken.CollectionPublic}>()!
                 let token <- redeemableItem  as! @NonFungibleToken.NFT?
                 self.redeemed = true
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
+
+                if let target = receiver.borrow<&AnyResource{NonFungibleToken.CollectionPublic}>() {
+                  target.deposit(token: <- token!)
+                  return
+                }
+                let target = receiver.borrow<&AnyResource{NonFungibleToken.Receiver}>()! 
                 target.deposit(token: <- token!)
                 return
             } else if cap.isInstance(Type<@FungibleToken.Vault>()) {
