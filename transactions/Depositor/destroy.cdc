@@ -1,4 +1,4 @@
-import LostAndFound from "../../contracts/LostAndFound.cdc"
+import "LostAndFound"
 
 transaction {
     prepare(acct: AuthAccount) {

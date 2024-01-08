@@ -1,7 +1,7 @@
-import FungibleToken from "../../contracts/FungibleToken.cdc"
-import ExampleToken from "../../contracts/ExampleToken.cdc"
+import "FungibleToken"
+import "ExampleToken"
 
-import LostAndFound from "../../contracts/LostAndFound.cdc"
+import "LostAndFound"
 
 pub fun main(addr: Address, ticketID: UInt64): &LostAndFound.Ticket? {
     let shelfManager = LostAndFound.borrowShelfManager()

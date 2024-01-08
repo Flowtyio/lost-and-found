@@ -1,8 +1,8 @@
-import FlowToken from "../../contracts/FlowToken.cdc"
-import FungibleToken from "../../contracts/FungibleToken.cdc"
-import ExampleToken from "../../contracts/ExampleToken.cdc"
+import "FlowToken"
+import "FungibleToken"
+import "ExampleToken"
 
-import LostAndFound from "../../contracts/LostAndFound.cdc"
+import "LostAndFound"
 
 transaction(redeemer: Address, amount: UFix64) {
     let tokenAdmin: &ExampleToken.Administrator

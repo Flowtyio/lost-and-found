@@ -1,6 +1,6 @@
-import LostAndFound from "../../contracts/LostAndFound.cdc"
-import FungibleToken from "../../contracts/FungibleToken.cdc"
-import FlowToken from "../../contracts/FlowToken.cdc"
+import "LostAndFound"
+import "FungibleToken"
+import "FlowToken"
 
 transaction(newThreshold: UFix64?) {
     let lfDepositor: &LostAndFound.Depositor

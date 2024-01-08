@@ -1,5 +1,5 @@
-import ExampleNFT from "../../contracts/ExampleNFT.cdc"
-import NonFungibleToken from "../../contracts/NonFungibleToken.cdc"
+import "ExampleNFT"
+import "NonFungibleToken"
 
 pub fun main(addr: Address): [UInt64] {
     let account = getAccount(addr)

@@ -1,6 +1,6 @@
-import FlowToken from "../../contracts/FlowToken.cdc"
-import FungibleToken from "../../contracts/FungibleToken.cdc"
-import ExampleNFT from "../../contracts/ExampleNFT.cdc"
+import "FlowToken"
+import "FungibleToken"
+import "ExampleNFT"
 
 transaction {
     prepare(signer: AuthAccount) {

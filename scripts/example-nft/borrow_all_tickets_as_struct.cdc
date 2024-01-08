@@ -1,4 +1,4 @@
-import LostAndFound from "../../contracts/LostAndFound.cdc"
+import "LostAndFound"
 import LostAndFoundHelper from "../../contracts/LostAndFoundHelper.cdc"
 
 pub fun main(addr: Address): [LostAndFoundHelper.Ticket] {

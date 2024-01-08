@@ -1,5 +1,5 @@
-import FungibleToken from "../../contracts/FungibleToken.cdc"
-import ExampleToken from "../../contracts/ExampleToken.cdc"
+import "FungibleToken"
+import "ExampleToken"
 
 pub fun main(addr: Address): UFix64 {
     let acct = getAccount(addr)

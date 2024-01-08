@@ -1,10 +1,10 @@
-import FlowToken from "../../contracts/FlowToken.cdc"
-import FungibleToken from "../../contracts/FungibleToken.cdc"
-import ExampleNFT from "../../contracts/ExampleNFT.cdc"
-import NonFungibleToken from "../../contracts/NonFungibleToken.cdc"
-import MetadataViews from "../../contracts/MetadataViews.cdc"
+import "FlowToken"
+import "FungibleToken"
+import "ExampleNFT"
+import "NonFungibleToken"
+import "MetadataViews"
 
-import LostAndFound from "../../contracts/LostAndFound.cdc"
+import "LostAndFound"
 
 transaction(recipient: Address) {
     // local variable for storing the minter reference
@@ -19,14 +19,13 @@ transaction(recipient: Address) {
     }
 
     execute {
-        let exampleNFTReceiver = getAccount(recipient).getCapability<&{NonFungibleToken.CollectionPublic}>(ExampleNFT.CollectionPublicPath)
         let token <- self.minter.mintAndReturnNFT(name: "testname", description: "descr", thumbnail: "image.html", royalties: [])
         let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?
         let memo = "test memo"
 
-        self.depositor.trySendResource(
+        self.depositor.deposit(
+            redeemer: recipient,
             item: <-token,
-            cap: exampleNFTReceiver,
             memo: memo,
             display: display
         )

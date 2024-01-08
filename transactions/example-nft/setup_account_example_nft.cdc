@@ -1,6 +1,6 @@
-import FlowToken from "../../contracts/FlowToken.cdc"
-import NonFungibleToken from "../../contracts/NonFungibleToken.cdc"
-import ExampleNFT from "../../contracts/ExampleNFT.cdc"
+import "FlowToken"
+import "NonFungibleToken"
+import "ExampleNFT"
 
 transaction {
 

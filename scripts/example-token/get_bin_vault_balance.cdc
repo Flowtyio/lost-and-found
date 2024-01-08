@@ -1,5 +1,5 @@
-import FungibleToken from "../../contracts/FungibleToken.cdc"
-import LostAndFound from "../../contracts/LostAndFound.cdc"
+import "FungibleToken"
+import "LostAndFound"
 
 pub fun main(addr: Address, type: String): UFix64 {
     let tickets = LostAndFound.borrowAllTicketsByType(addr: addr, type: CompositeType(type)!)

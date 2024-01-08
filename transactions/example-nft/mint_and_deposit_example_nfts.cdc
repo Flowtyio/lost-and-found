@@ -1,10 +1,10 @@
-import FlowToken from "../../contracts/FlowToken.cdc"
-import FungibleToken from "../../contracts/FungibleToken.cdc"
-import ExampleNFT from "../../contracts/ExampleNFT.cdc"
-import NonFungibleToken from "../../contracts/NonFungibleToken.cdc"
-import MetadataViews from "../../contracts/MetadataViews.cdc"
+import "FlowToken"
+import "FungibleToken"
+import "ExampleNFT"
+import "NonFungibleToken"
+import "MetadataViews"
 
-import LostAndFound from "../../contracts/LostAndFound.cdc"
+import "LostAndFound"
 
 transaction(recipient: Address, numToMint: Int) {
     // local variable for storing the minter reference
