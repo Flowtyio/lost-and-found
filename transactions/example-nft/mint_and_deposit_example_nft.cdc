@@ -33,16 +33,18 @@ transaction(recipient: Address) {
     }
 
     execute {
-        let token <- self.minter.mintAndReturnNFT(name: "testname", description: "descr", thumbnail: "image.html", royalties: [])
+        let cap: Capability<&AnyResource{NonFungibleToken.CollectionPublic}> = getAccount(recipient).getCapability<&{NonFungibleToken.CollectionPublic}>(ExampleNFT.CollectionPublicPath)
+
+        let token <- self.minter.mint(name: "some test nft", description: "desc", thumbnail: "image.png")
         let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?
         let memo = "test memo"
         let depositEstimate <- LostAndFound.estimateDeposit(redeemer: recipient, item: <-token, memo: memo, display: display)
         let storageFee <- self.flowProvider.borrow()!.withdraw(amount: depositEstimate.storageFee)
         let resource <- depositEstimate.withdraw()
 
-        LostAndFound.deposit(
-            redeemer: recipient,
-            item: <-resource,
+        LostAndFound.trySendResource(
+            resource: <-resource,
+            cap: cap,
             memo: memo,
             display: display,
             storagePayment: &storageFee as &FungibleToken.Vault,

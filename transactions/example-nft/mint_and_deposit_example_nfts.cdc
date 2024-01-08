@@ -37,7 +37,7 @@ transaction(recipient: Address, numToMint: Int) {
         while numMinted < numToMint {
             numMinted = numMinted + 1
 
-            let token <- self.minter.mintAndReturnNFT(name: "testname", description: "descr", thumbnail: "image.html", royalties: []) as! @ExampleNFT.NFT
+            let token <- self.minter.mint(name: "testname", description: "descr", thumbnail: "image.html")
             let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?
 
             let memo = "test memo"

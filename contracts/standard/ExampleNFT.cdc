@@ -240,6 +240,23 @@ pub contract ExampleNFT: NonFungibleToken, ViewResolver {
             self.mintNFTWithId(recipient: recipient, name: name, description: description, thumbnail: thumbnail, royaltyReceipient: royaltyReceipient, id: ExampleNFT.totalSupply)
         }
 
+        pub fun mint(
+            name: String,
+            description: String,
+            thumbnail: String,
+        ): @NFT {
+            ExampleNFT.totalSupply = ExampleNFT.totalSupply + 1
+            let newNFT <- create NFT(
+                id: ExampleNFT.totalSupply,
+                name: name,
+                description: description,
+                thumbnail: thumbnail,
+                royalties: []
+            )
+
+            return <- newNFT
+        }
+
         pub fun mintNFTWithId(
             recipient: &{NonFungibleToken.CollectionPublic},
             name: String,
