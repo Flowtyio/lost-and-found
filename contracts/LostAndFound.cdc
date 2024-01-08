@@ -1,9 +1,10 @@
-import FungibleToken from "./FungibleToken.cdc"
-import FlowStorageFees from "./FlowStorageFees.cdc"
-import FlowToken from "./FlowToken.cdc"
-import NonFungibleToken from "./NonFungibleToken.cdc"
-import MetadataViews from "./MetadataViews.cdc"
-import FeeEstimator from "./FeeEstimator.cdc"
+import "FungibleToken"
+import "FlowStorageFees"
+import "FlowToken"
+import "NonFungibleToken"
+import "MetadataViews"
+
+import "FeeEstimator"
 
 // LostAndFound
 // One big problem on the flow blockchain is how to handle accounts that are
@@ -466,7 +467,7 @@ pub contract LostAndFound {
             let tmp <- self.shelves[addr] <- nil
             let shelf <-! tmp!
 
-            assert(shelf.getRedeemableTypes().length! == 0, message: "shelf still has redeemable types")
+            assert(shelf.getRedeemableTypes().length == 0, message: "shelf still has redeemable types")
             let flowTokenRepayment = shelf.flowTokenRepayment
             let uuid = shelf.uuid
             if flowTokenRepayment != nil && flowTokenRepayment!.check() && LostAndFound.storageFees[uuid] != nil {
@@ -538,7 +539,7 @@ pub contract LostAndFound {
 
             let flowTokenRepayment = ticket.flowTokenRepayment
             let uuid = ticket.uuid
-            shelf!.deposit(ticket: <-ticket, flowTokenRepayment: flowTokenRepayment)
+            shelf.deposit(ticket: <-ticket, flowTokenRepayment: flowTokenRepayment)
             
             let storageFee = FeeEstimator.storageUsedToFlowAmount(LostAndFound.account.storageUsed - storageBefore)
             LostAndFound.storageFees[uuid] = storageFee
@@ -634,7 +635,7 @@ pub contract LostAndFound {
         }
 
         let types = shelf!.getRedeemableTypes()
-        let allTickets = [] as [&LostAndFound.Ticket]
+        let allTickets: [&Ticket] = []
 
         for type in types {
             let tickets = LostAndFound.borrowAllTicketsByType(addr: addr, type: type)

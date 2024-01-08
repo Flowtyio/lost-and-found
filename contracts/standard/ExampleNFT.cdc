@@ -1,4 +1,4 @@
-/*
+/* 
 *
 *  This is an example implementation of a Flow Non-Fungible Token
 *  It is not part of the official standard but it assumed to be
@@ -6,13 +6,15 @@
 *
 *  This contract does not implement any sophisticated classification
 *  system for its NFTs. It defines a simple NFT with minimal metadata.
-*
+*   
 */
 
-import NonFungibleToken from "./NonFungibleToken.cdc"
-import MetadataViews from "./MetadataViews.cdc"
+import "NonFungibleToken"
+import "MetadataViews"
+import "ViewResolver"
+import "FungibleToken"
 
-pub contract ExampleNFT: NonFungibleToken {
+pub contract ExampleNFT: NonFungibleToken, ViewResolver {
 
     pub var totalSupply: UInt64
 
@@ -20,9 +22,13 @@ pub contract ExampleNFT: NonFungibleToken {
     pub event Withdraw(id: UInt64, from: Address?)
     pub event Deposit(id: UInt64, to: Address?)
 
+    pub event CollectionCreated(id: UInt64)
+    pub event CollectionDestroyed(id: UInt64)
+
     pub let CollectionStoragePath: StoragePath
     pub let CollectionPublicPath: PublicPath
     pub let MinterStoragePath: StoragePath
+    pub let MinterPublicPath: PublicPath
 
     pub resource NFT: NonFungibleToken.INFT, MetadataViews.Resolver {
         pub let id: UInt64
@@ -30,7 +36,7 @@ pub contract ExampleNFT: NonFungibleToken {
         pub let name: String
         pub let description: String
         pub let thumbnail: String
-        access(self) let royalties: [MetadataViews.Royalty]
+        access(self) var royalties: [MetadataViews.Royalty]
 
         init(
             id: UInt64,
@@ -46,6 +52,10 @@ pub contract ExampleNFT: NonFungibleToken {
             self.royalties = royalties
         }
 
+        pub fun setRoyalties(_ royalties: [MetadataViews.Royalty]) {
+            self.royalties = royalties
+        }
+    
         pub fun getViews(): [Type] {
             return [
                 Type<MetadataViews.Display>(),
@@ -54,7 +64,8 @@ pub contract ExampleNFT: NonFungibleToken {
                 Type<MetadataViews.ExternalURL>(),
                 Type<MetadataViews.NFTCollectionData>(),
                 Type<MetadataViews.NFTCollectionDisplay>(),
-                Type<MetadataViews.Serial>()
+                Type<MetadataViews.Serial>(),
+                Type<MetadataViews.Traits>()
             ]
         }
 
@@ -71,7 +82,8 @@ pub contract ExampleNFT: NonFungibleToken {
                 case Type<MetadataViews.Editions>():
                     // There is no max number of NFTs that can be minted from this contract
                     // so the max edition field value is set to nil
-                    let editionInfo = MetadataViews.Edition(name: "Example NFT Edition", number: self.id, max: nil)
+                    let editionName = self.id % 2 == 0 ? "Example NFT Edition (even)" : "Example NFT Edition (odd)"
+                    let editionInfo = MetadataViews.Edition(name: editionName, number: self.id, max: nil)
                     let editionList: [MetadataViews.Edition] = [editionInfo]
                     return MetadataViews.Editions(
                         editionList
@@ -115,6 +127,13 @@ pub contract ExampleNFT: NonFungibleToken {
                             "twitter": MetadataViews.ExternalURL("https://twitter.com/flow_blockchain")
                         }
                     )
+                case Type<MetadataViews.Traits>():
+                    let dict: {String: AnyStruct} = {
+                        "name": self.name,
+                        "even": self.id % 2 == 0,
+                        "id": self.id
+                    }
+                    return MetadataViews.dictToTraits(dict: dict, excludedNames: [])
             }
             return nil
         }
@@ -139,6 +158,7 @@ pub contract ExampleNFT: NonFungibleToken {
 
         init () {
             self.ownedNFTs <- {}
+            emit CollectionCreated(id: self.uuid)
         }
 
         // withdraw removes an NFT from the collection and moves it to the caller
@@ -175,7 +195,7 @@ pub contract ExampleNFT: NonFungibleToken {
         pub fun borrowNFT(id: UInt64): &NonFungibleToken.NFT {
             return (&self.ownedNFTs[id] as &NonFungibleToken.NFT?)!
         }
-
+ 
         pub fun borrowExampleNFT(id: UInt64): &ExampleNFT.NFT? {
             if self.ownedNFTs[id] != nil {
                 // Create an authorized reference to allow downcasting
@@ -194,34 +214,19 @@ pub contract ExampleNFT: NonFungibleToken {
 
         destroy() {
             destroy self.ownedNFTs
+            emit CollectionDestroyed(id: self.uuid)
         }
     }
 
     // public function that anyone can call to create a new empty collection
-    pub fun createEmptyCollection(): @NonFungibleToken.Collection {
-        return <- create Collection()
+    pub fun createEmptyCollection(): @ExampleNFT.Collection {
+        return <- (create Collection() as! @ExampleNFT.Collection)
     }
 
     // Resource that an admin or something similar would own to be
     // able to mint new NFTs
     //
     pub resource NFTMinter {
-
-        pub fun mintAndReturnNFT(
-            name: String,
-            description: String,
-            thumbnail: String,
-            royalties: [MetadataViews.Royalty]
-        ): @ExampleNFT.NFT {
-            return <- create NFT(
-                id: ExampleNFT.totalSupply,
-                name: name,
-                description: description,
-                thumbnail: thumbnail,
-                royalties: royalties
-            )
-        }
-
         // mintNFT mints a new NFT with a new ID
         // and deposit it in the recipients collection using their collection reference
         pub fun mintNFT(
@@ -229,8 +234,57 @@ pub contract ExampleNFT: NonFungibleToken {
             name: String,
             description: String,
             thumbnail: String,
-            royalties: [MetadataViews.Royalty]
+            royaltyReceipient: Address,
         ) {
+            ExampleNFT.totalSupply = ExampleNFT.totalSupply + 1
+            self.mintNFTWithId(recipient: recipient, name: name, description: description, thumbnail: thumbnail, royaltyReceipient: royaltyReceipient, id: ExampleNFT.totalSupply)
+        }
+
+        pub fun mintNFTWithId(
+            recipient: &{NonFungibleToken.CollectionPublic},
+            name: String,
+            description: String,
+            thumbnail: String,
+            royaltyReceipient: Address,
+            id: UInt64
+        ) {
+            let royaltyRecipient = getAccount(royaltyReceipient).getCapability<&AnyResource{FungibleToken.Receiver}>(/public/placeholder)
+            let cutInfo = MetadataViews.Royalty(receiver: royaltyRecipient, cut: 0.05, description: "")
+            // create a new NFT
+            var newNFT <- create NFT(
+                id: id,
+                name: name,
+                description: description,
+                thumbnail: thumbnail,
+                royalties: [cutInfo]
+            )
+
+            // deposit it in the recipient's account using their reference
+            recipient.deposit(token: <-newNFT)
+        }
+
+        // mintNFT mints a new NFT with a new ID
+        // and deposit it in the recipients collection using their collection reference
+        pub fun mintNFTWithRoyaltyCuts(
+            recipient: &{NonFungibleToken.CollectionPublic},
+            name: String,
+            description: String,
+            thumbnail: String,
+            royaltyReceipients: [Address],
+            royaltyCuts: [UFix64]
+        ) {
+            assert(royaltyReceipients.length == royaltyCuts.length, message: "mismatched royalty recipients and cuts")
+            let royalties: [MetadataViews.Royalty] = []
+
+            var index = 0
+            while index < royaltyReceipients.length {
+                let royaltyRecipient = getAccount(royaltyReceipients[index]).getCapability<&AnyResource{FungibleToken.Receiver}>(/public/placeholder)
+                let cutInfo = MetadataViews.Royalty(receiver: royaltyRecipient, cut: royaltyCuts[index], description: "")
+                royalties.append(cutInfo)
+                index = index + 1
+            }            
+
+            ExampleNFT.totalSupply = ExampleNFT.totalSupply + 1
 
             // create a new NFT
             var newNFT <- create NFT(
@@ -243,9 +297,59 @@ pub contract ExampleNFT: NonFungibleToken {
 
             // deposit it in the recipient's account using their reference
             recipient.deposit(token: <-newNFT)
-
-            ExampleNFT.totalSupply = ExampleNFT.totalSupply + UInt64(1)
         }
+    }
+
+    /// Function that resolves a metadata view for this contract.
+    ///
+    /// @param view: The Type of the desired view.
+    /// @return A structure representing the requested view.
+    ///
+    pub fun resolveView(_ view: Type): AnyStruct? {
+        switch view {
+            case Type<MetadataViews.NFTCollectionData>():
+                return MetadataViews.NFTCollectionData(
+                        storagePath: ExampleNFT.CollectionStoragePath,
+                        publicPath: ExampleNFT.CollectionPublicPath,
+                        providerPath: /private/exampleNFTCollection,
+                        publicCollection: Type<&ExampleNFT.Collection{ExampleNFT.ExampleNFTCollectionPublic}>(),
+                        publicLinkedType: Type<&ExampleNFT.Collection{ExampleNFT.ExampleNFTCollectionPublic,NonFungibleToken.CollectionPublic,NonFungibleToken.Receiver,MetadataViews.ResolverCollection}>(),
+                        providerLinkedType: Type<&ExampleNFT.Collection{ExampleNFT.ExampleNFTCollectionPublic,NonFungibleToken.CollectionPublic,NonFungibleToken.Provider,MetadataViews.ResolverCollection}>(),
+                        createEmptyCollectionFunction: (fun (): @NonFungibleToken.Collection {
+                            return <-ExampleNFT.createEmptyCollection()
+                        })
+                )
+            case Type<MetadataViews.NFTCollectionDisplay>():
+                let media = MetadataViews.Media(
+                    file: MetadataViews.HTTPFile(
+                        url: "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg"
+                    ),
+                    mediaType: "image/svg+xml"
+                )
+                return MetadataViews.NFTCollectionDisplay(
+                    name: "The Example Collection",
+                    description: "This collection is used as an example to help you develop your next Flow NFT.",
+                    externalURL: MetadataViews.ExternalURL("https://example-nft.onflow.org"),
+                    squareImage: media,
+                    bannerImage: media,
+                    socials: {
+                        "twitter": MetadataViews.ExternalURL("https://twitter.com/flow_blockchain")
+                    }
+                )
+        }
+        return nil
+    }
+
+    /// Function that returns all the Metadata Views implemented by a Non Fungible Token
+    ///
+    /// @return An array of Types defining the implemented views. This value will be used by
+    ///         developers to know which parameter to pass to the resolveView() method.
+    ///
+    pub fun getViews(): [Type] {
+        return [
+            Type<MetadataViews.NFTCollectionData>(),
+            Type<MetadataViews.NFTCollectionDisplay>()
+        ]
     }
 
     init() {
@@ -256,6 +360,7 @@ pub contract ExampleNFT: NonFungibleToken {
         self.CollectionStoragePath = /storage/exampleNFTCollection
         self.CollectionPublicPath = /public/exampleNFTCollection
         self.MinterStoragePath = /storage/exampleNFTMinter
+        self.MinterPublicPath = /public/exampleNFTMinter
 
         // Create a Collection resource and save it to storage
         let collection <- create Collection()
@@ -270,7 +375,9 @@ pub contract ExampleNFT: NonFungibleToken {
         // Create a Minter resource and save it to storage
         let minter <- create NFTMinter()
         self.account.save(<-minter, to: self.MinterStoragePath)
+        self.account.link<&ExampleNFT.NFTMinter>(self.MinterPublicPath, target: self.MinterStoragePath)
 
         emit ContractInitialized()
     }
 }
+ 

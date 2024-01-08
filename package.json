@@ -23,15 +23,7 @@
     "url": "https://github.com/Flowtyio/lost-and-found/issues"
   },
   "homepage": "https://github.com/Flowtyio/lost-and-found#readme",
-  "devDependencies": {
-    "@babel/core": "^7.18.0",
-    "@babel/preset-env": "^7.18.0",
-    "babel-jest": "^28.1.0",
-    "flow-js-testing": "^0.2.3-alpha.6",
-    "jest": "^28.1.0",
-    "jest-environment-node": "^28.1.0"
-  },
   "dependencies": {
-    "fcl-gcp-kms-authorizer": "^0.0.1-b"
+    "@flowtyio/flow-contracts": "^0.0.18"
   }
 }

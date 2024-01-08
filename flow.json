@@ -1,140 +1,184 @@
 {
-	"emulators": {
-		"default": {
-			"port": 3569,
-			"serviceAccount": "emulator-account"
-		}
-	},
-	"contracts": {
-		"LostAndFound": "./cadence/contracts/LostAndFound.cdc",
-		"LostAndFoundHelper": "./cadence/contracts/LostAndFoundHelper.cdc",
-		"FeeEstimator": "./cadence/contracts/FeeEstimator.cdc",
-		"ExampleNFT": "./cadence/contracts/ExampleNFT.cdc",
-		"ExampleToken": "./cadence/contracts/ExampleToken.cdc",
-		"MetadataViews": {
-			"source": "./cadence/contracts/MetadataViews.cdc",
-			"aliases": {
-				"emulator": "0xf8d6e0586b0a20c7",
-				"testnet": "0x631e88ae7f1d7c20",
-				"mainnet": "0x1d7e57aa55817448"
-			}
-		},
-		"FungibleToken": {
-			"source": "./cadence/contracts/FungibleToken.cdc",
-			"aliases": {
-				"emulator": "0xee82856bf20e2aa6",
-				"testnet": "0x9a0766d93b6608b7",
-				"mainnet": "0xf233dcee88fe0abe"
-			}
-		},
-		"NonFungibleToken": {
-			"source": "./cadence/contracts/NonFungibleToken.cdc",
-			"aliases": {
-				"emulator": "0xf8d6e0586b0a20c7",
-				"testnet": "0x631e88ae7f1d7c20",
-				"mainnet": "0x1d7e57aa55817448"
-			}
-		},
-		"FlowToken": {
-			"source": "./cadence/contracts/FlowToken.cdc",
-			"aliases": {
-				"emulator": "0x0ae53cb6e3f42a79",
-				"testnet": "0x7e60df042a9c0868",
-				"mainnet": "0x1654653399040a61"
-			}
-		},
-		"FlowStorageFees": {
-			"source": "./cadence/contracts/FlowStorageFees.cdc",
-			"aliases": {
-				"emulator": "0xf8d6e0586b0a20c7",
-				"testnet": "0x8c5303eaa26202d6",
-				"mainnet": "0xe467b9dd11fa00df"
-			}
-		}
-	},
-	"networks": {
-		"emulator": "127.0.0.1:3569",
-		"mainnet": "access.mainnet.nodes.onflow.org:9000",
-		"testnet": "access.devnet.nodes.onflow.org:9000"
-	},
-	"accounts": {
-		"emulator-account": {
-			"address": "f8d6e0586b0a20c7",
-			"key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
-		},
-		"emulator-receiver": {
-			"address": "01cf0e2f2f715450",
-			"key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
-		},
-		"emulator-sender": {
-			"address": "179b6b1cb6755e31",
-			"key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
-		},
-		"emulator-user1": {
-			"address": "f3fcd2c1a78f5eee",
-			"key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
-		},
-		"emulator-user2": {
-			"address": "e03daebed8ca0615",
-			"key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
-		},
-		"lost-and-found-testnet": {
-			"address": "0xbe4635353f55bbd4",
-			"key": {
-				"type": "google-kms",
-				"index": 0,
-				"signatureAlgorithm": "ECDSA_P256",
-				"hashAlgorithm": "SHA2_256",
-				"resourceID": "projects/lost-and-found-355423/locations/us-west1/keyRings/contract/cryptoKeys/testnet/cryptoKeyVersions/1"
-			}
-		},
-		"lost-and-found-mainnet": {
-			"address": "0x473d6a2c37eab5be",
-			"key": {
-				"type": "google-kms",
-				"index": 0,
-				"signatureAlgorithm": "ECDSA_P256",
-				"hashAlgorithm": "SHA2_256",
-				"resourceID": "projects/lost-and-found-355423/locations/us-west1/keyRings/contract/cryptoKeys/mainnet/cryptoKeyVersions/1"
-			}
-		}
-	},
-	"deployments": {
-		"emulator": {
-			"emulator-account": [
-				"NonFungibleToken",
-				"MetadataViews",
-				"ExampleNFT",
-				"ExampleToken",
-				"LostAndFound",
-				"FeeEstimator",
-				"LostAndFoundHelper"
-			],
-			"emulator-sender": [],
-			"emulator-receiver": [],
-			"emulator-user1": [],
-			"emulator-user2": []
-		},
-		"testnet": {
-			"lost-and-found-testnet": [
-				"LostAndFound",
-				"FeeEstimator",
-				"LostAndFoundHelper"
-			]
-		},
-		"mainnet": {
-			"lost-and-found-mainnet": [
-				"LostAndFound",
-				"FeeEstimator",
-				"LostAndFoundHelper"
-			]
-		}
-	},
-	"emulatorAccounts": {
-		"emulator-account": "f8d6e0586b0a20c7",
-		"emulator-sender": "179b6b1cb6755e31",
-		"emulator-receiver": "01cf0e2f2f715450",
-		"emulator-user1": "f3fcd2c1a78f5eee",
-		"emulator-user2": "e03daebed8ca0615"
-	}
+  "emulators": {
+    "default": {
+      "port": 3569,
+      "serviceAccount": "emulator-account"
+    }
+  },
+  "contracts": {
+    "LostAndFound": {
+      "source": "./contracts/LostAndFound.cdc",
+      "aliases": {
+        "testing": "0x0000000000000005",
+        "emulator": "0xf8d6e0586b0a20c7",
+        "testnet": "0xbe4635353f55bbd4",
+        "mainnet": "0x473d6a2c37eab5be"
+      }
+    },
+    "LostAndFoundHelper": {
+      "source": "./contracts/LostAndFoundHelper.cdc",
+      "aliases": {
+        "testing": "0x0000000000000005",
+        "emulator": "0xf8d6e0586b0a20c7",
+        "testnet": "0xbe4635353f55bbd4",
+        "mainnet": "0x473d6a2c37eab5be" 
+      }
+    },
+    "FeeEstimator": {
+      "source": "./contracts/FeeEstimator.cdc",
+      "aliases": {
+        "testing": "0x0000000000000005",
+        "emulator": "0xf8d6e0586b0a20c7",
+        "testnet": "0xbe4635353f55bbd4",
+        "mainnet": "0x473d6a2c37eab5be" 
+      }
+    },
+    "ExampleNFT": {
+      "source": "./contracts/standard/ExampleNFT.cdc",
+      "aliases": {
+        "testing": "0x0000000000000006"
+      }
+    },
+    "ExampleToken": {
+      "source": "./contracts/standard/ExampleToken.cdc",
+      "aliases": {
+        "testing": "0x0000000000000007"
+      }
+    },
+    "FungibleToken": {
+      "source": "./node_modules/@flowtyio/flow-contracts/contracts/FungibleToken.cdc",
+      "aliases": {
+        "emulator": "0xee82856bf20e2aa6",
+        "testnet": "0x9a0766d93b6608b7",
+        "mainnet": "0xf233dcee88fe0abe"
+      }
+    },
+    "FlowToken": {
+      "source": "./node_modules/@flowtyio/flow-contracts/contracts/FlowToken.cdc",
+      "aliases": {
+        "emulator": "0x0ae53cb6e3f42a79",
+        "testnet": "0x7e60df042a9c0868",
+        "mainnet": "0x1654653399040a61"
+      }
+    },
+    "ViewResolver": {
+      "source": "./node_modules/@flowtyio/flow-contracts/contracts/ViewResolver.cdc",
+      "aliases": {
+        "emulator": "0xf8d6e0586b0a20c7",
+        "testnet": "0x631e88ae7f1d7c20",
+        "mainnet": "0x1d7e57aa55817448"
+      }
+    },
+    "FungibleTokenMetadataViews": {
+      "source": "./node_modules/@flowtyio/flow-contracts/contracts/FungibleTokenMetadataViews.cdc",
+      "aliases": {
+        "emulator": "0xee82856bf20e2aa6",
+        "testnet": "0x9a0766d93b6608b7",
+        "mainnet": "0xf233dcee88fe0abe"
+      }
+    },
+    "NonFungibleToken": {
+      "source": "./node_modules/@flowtyio/flow-contracts/contracts/NonFungibleToken.cdc",
+      "aliases": {
+        "emulator": "0xf8d6e0586b0a20c7",
+        "testnet": "0x631e88ae7f1d7c20",
+        "mainnet": "0x1d7e57aa55817448"
+      }
+    },
+    "MetadataViews": {
+      "source": "./node_modules/@flowtyio/flow-contracts/contracts/MetadataViews.cdc",
+      "aliases": {
+        "emulator": "0xf8d6e0586b0a20c7",
+        "testnet": "0x631e88ae7f1d7c20",
+        "mainnet": "0x1d7e57aa55817448"
+      }
+    },
+    "FlowStorageFees": {
+      "source": "./node_modules/@flowtyio/flow-contracts/contracts/FlowStorageFees.cdc",
+      "aliases": {
+        "emulator": "0xf8d6e0586b0a20c7",
+        "testnet": "0x8c5303eaa26202d6",
+        "mainnet": "0xf919ee77447b7497"
+      }
+    }
+  },
+  "networks": {
+    "emulator": "127.0.0.1:3569",
+    "testing": "127.0.0.1:3569",
+    "mainnet": "access.mainnet.nodes.onflow.org:9000",
+    "testnet": "access.devnet.nodes.onflow.org:9000"
+  },
+  "accounts": {
+    "emulator-account": {
+      "address": "f8d6e0586b0a20c7",
+      "key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
+    },
+    "lost-and-found-testnet": {
+      "address": "0xbe4635353f55bbd4",
+      "key": {
+        "type": "google-kms",
+        "index": 0,
+        "signatureAlgorithm": "ECDSA_P256",
+        "hashAlgorithm": "SHA2_256",
+        "resourceID": "projects/lost-and-found-355423/locations/us-west1/keyRings/contract/cryptoKeys/testnet/cryptoKeyVersions/1"
+      }
+    },
+    "lost-and-found-mainnet": {
+      "address": "0x473d6a2c37eab5be",
+      "key": {
+        "type": "google-kms",
+        "index": 0,
+        "signatureAlgorithm": "ECDSA_P256",
+        "hashAlgorithm": "SHA2_256",
+        "resourceID": "projects/lost-and-found-355423/locations/us-west1/keyRings/contract/cryptoKeys/mainnet/cryptoKeyVersions/1"
+      }
+    },
+    "emulator-ft": {
+      "address": "ee82856bf20e2aa6",
+      "key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
+    },
+    "emulator-flowtoken": {
+      "address": "0ae53cb6e3f42a79",
+      "key": "f2e846bd4c1fbf17839ae59e111c6b1c98579eda7a841412f102d6621ec671cb"
+    }
+  },
+  "deployments": {
+    "emulator": {
+      "emulator-account": [
+        "NonFungibleToken",
+        "MetadataViews",
+        "ExampleNFT",
+        "ExampleToken",
+        "LostAndFound",
+        "FeeEstimator",
+        "LostAndFoundHelper",
+        "ViewResolver",
+        "FlowStorageFees"
+      ],
+      "emulator-ft": [
+        "FungibleToken",
+        "FungibleTokenMetadataViews"
+      ],
+      "emulator-flowtoken": [
+        "FlowToken"
+      ]
+    },
+    "testnet": {
+      "lost-and-found-testnet": [
+        "LostAndFound",
+        "FeeEstimator",
+        "LostAndFoundHelper"
+      ]
+    },
+    "mainnet": {
+      "lost-and-found-mainnet": [
+        "LostAndFound",
+        "FeeEstimator",
+        "LostAndFoundHelper"
+      ]
+    }
+  },
+  "emulatorAccounts": {
+    "emulator-account": "f8d6e0586b0a20c7"
+  }
 }
