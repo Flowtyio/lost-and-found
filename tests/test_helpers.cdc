@@ -159,3 +159,19 @@ pub fun mintFlow(_ receiver: Test.Account, _ amount: UFix64) {
         panic(txResult.error!.message)
     }
 }
+
+pub fun initializeDepositor(_ acct: Test.Account) {
+    txExecutor("depositor/setup.cdc", [acct], [lowBalanceThreshold])
+    mintFlow(acct, lowBalanceThreshold + 1.0)
+    txExecutor("depositor/add_flow_tokens.cdc", [acct], [lowBalanceThreshold])
+}
+
+pub fun initializeDepositorWithoutBalance(_ acct: Test.Account) {
+    txExecutor("depositor/setup.cdc", [acct], [lowBalanceThreshold])
+}
+
+pub fun getNewDepositor(): Test.Account {
+    let acct = getNewAccount()
+    initializeDepositor(acct)
+    return acct
+}

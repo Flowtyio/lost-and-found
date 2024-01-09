@@ -289,22 +289,6 @@ pub fun trySendFt(_ acct: Test.Account, _ amount: UFix64) {
     txExecutor("example-token/try_send_example_token.cdc", [exampleTokenAccount], [acct.address, amount])
 }
 
-pub fun initializeDepositor(_ acct: Test.Account) {
-    txExecutor("depositor/setup.cdc", [acct], [lowBalanceThreshold])
-    mintFlow(acct, lowBalanceThreshold + 1.0)
-    txExecutor("depositor/add_flow_tokens.cdc", [acct], [lowBalanceThreshold])
-}
-
-pub fun initializeDepositorWithoutBalance(_ acct: Test.Account) {
-    txExecutor("depositor/setup.cdc", [acct], [lowBalanceThreshold])
-}
-
-pub fun getNewDepositor(): Test.Account {
-    let acct = getNewAccount()
-    initializeDepositor(acct)
-    return acct
-}
-
 pub fun mintAndSendNftWithDepositor(_ to: Test.Account): UInt64 {
     txExecutor("example-nft/mint_and_deposit_with_depositor.cdc", [exampleNftAccount], [to.address])
     let event = Test.eventsOfType(Type<ExampleNFT.Mint>()).removeLast() as! ExampleNFT.Mint
