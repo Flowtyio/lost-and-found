@@ -26,7 +26,7 @@ jobs:
     - name: Install Flow dependencies
       run: npm i
     - name: Install Flow CLI
-      run: bash -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)" -- v1.9.10
+      run: bash -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)" -- v1.10.0
     - name: Run tests
       run: sh ./run-tests.sh
     - name: Normalize coverage report filepaths
