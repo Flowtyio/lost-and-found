@@ -21,6 +21,7 @@ pub contract ExampleNFT: NonFungibleToken, ViewResolver {
     pub event ContractInitialized()
     pub event Withdraw(id: UInt64, from: Address?)
     pub event Deposit(id: UInt64, to: Address?)
+    pub event Mint(id: UInt64)
 
     pub event CollectionCreated(id: UInt64)
     pub event CollectionDestroyed(id: UInt64)
@@ -50,6 +51,8 @@ pub contract ExampleNFT: NonFungibleToken, ViewResolver {
             self.description = description
             self.thumbnail = thumbnail
             self.royalties = royalties
+
+            emit Mint(id: self.id)
         }
 
         pub fun setRoyalties(_ royalties: [MetadataViews.Royalty]) {

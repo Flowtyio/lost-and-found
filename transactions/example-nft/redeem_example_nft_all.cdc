@@ -3,7 +3,7 @@ import "NonFungibleToken"
 
 import "LostAndFound"
 
-transaction() {
+transaction {
     let receiver: Capability<&{NonFungibleToken.CollectionPublic}>
     let redeemer: Address
 

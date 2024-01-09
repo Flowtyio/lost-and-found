@@ -88,21 +88,54 @@ pub fun testTrySendFtResource_InvalidCapability() {
     Test.assertEqual(exampleTokenIdentifier(), event.type.identifier)
 }
 
+pub fun testRedeemAllTickets_ExampleNft() {
+    let acct = getNewAccount()
+    let id = trySendNft(acct)
+
+    setupExampleNft(acct: acct)
+    txExecutor("example-nft/redeem_example_nft_all.cdc", [acct], [])
+
+    let event = Test.eventsOfType(Type<ExampleNFT.Deposit>()).removeLast() as! ExampleNFT.Deposit
+    Test.assertEqual(acct.address, event.to!)
+    Test.assertEqual(id, event.id)
+}
+
+pub fun testRedeemAllTickets_ExampleToken() {
+    let acct = getNewAccount()
+    let amount = 5.0
+    trySendFt(acct, amount)
+
+    setupExampleToken(acct: acct)
+    txExecutor("example-token/redeem_example_token_all.cdc", [acct], [])
+
+    let event = Test.eventsOfType(Type<ExampleToken.TokensDeposited>()).removeLast() as! ExampleToken.TokensDeposited
+    Test.assertEqual(acct.address, event.to!)
+    Test.assertEqual(amount, event.amount)
+}
+
+pub fun testGetAddress() {
+    let addr = scriptExecutor("lost-and-found/get_address.cdc", [])! as! Address
+    Test.assertEqual(lostAndFoundAccount.address, addr)
+}
+
 // TODO: send non nft/ft resource
-// TODO: getAddress
-// TODO: redeemAll - nft
-// TODO: redeemAll - ft
 // TODO: borrowAllTickets for address
 // TODO: borrowAllTicketsByType - nft
 // TODO: borrowAllTicketsByType - ft
 // TODO: create depositor
 
-pub fun mintAndSendNft(_ acct: Test.Account) {
+pub fun mintAndSendNft(_ acct: Test.Account): UInt64 {
     txExecutor("example-nft/mint_and_deposit_example_nft.cdc", [exampleNftAccount], [acct.address])
+    let event = Test.eventsOfType(Type<ExampleNFT.Mint>()).removeLast() as! ExampleNFT.Mint
+
+    return event.id
 }
 
-pub fun trySendNft(_ acct: Test.Account) {
+pub fun trySendNft(_ acct: Test.Account): UInt64 {
     txExecutor("example-nft/try_send_example_nft.cdc", [exampleNftAccount], [acct.address])
+    let event = Test.eventsOfType(Type<ExampleNFT.Mint>()).removeLast() as! ExampleNFT.Mint
+
+    return event.id
 }
 
 pub fun trySendFt(_ acct: Test.Account, _ amount: UFix64) {
