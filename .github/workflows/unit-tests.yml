@@ -28,7 +28,10 @@ jobs:
     - name: Install Flow CLI
       run: bash -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)" -- v1.10.0
     - name: Run tests
-      run: sh ./run-tests.sh
+      run: |
+        pwd
+        ls
+        sh ./run-tests.sh
     - name: Normalize coverage report filepaths
       run : sh ./normalize_coverage_report.sh
     - name: Upload coverage reports to Codecov
