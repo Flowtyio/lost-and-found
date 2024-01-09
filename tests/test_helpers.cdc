@@ -74,10 +74,10 @@ pub fun deployAll() {
     mintFlow(exampleNftAccount, 10.0)
     mintFlow(exampleTokenAccount, 10.0)
 
-    txExecutor("depositor/setup.cdc", [exampleNftAccount], [lowBalanceThreshold])
+    txExecutor("depositor/setup_depositor.cdc", [exampleNftAccount], [lowBalanceThreshold])
     txExecutor("depositor/add_flow_tokens.cdc", [exampleNftAccount], [lowBalanceThreshold])
 
-    txExecutor("depositor/setup.cdc", [exampleTokenAccount], [lowBalanceThreshold])
+    txExecutor("depositor/setup_depositor.cdc", [exampleTokenAccount], [lowBalanceThreshold])
     txExecutor("depositor/add_flow_tokens.cdc", [exampleTokenAccount], [lowBalanceThreshold])
 }
 
@@ -161,13 +161,13 @@ pub fun mintFlow(_ receiver: Test.Account, _ amount: UFix64) {
 }
 
 pub fun initializeDepositor(_ acct: Test.Account) {
-    txExecutor("depositor/setup.cdc", [acct], [lowBalanceThreshold])
+    txExecutor("depositor/setup_depositor.cdc", [acct], [lowBalanceThreshold])
     mintFlow(acct, lowBalanceThreshold + 1.0)
     txExecutor("depositor/add_flow_tokens.cdc", [acct], [lowBalanceThreshold])
 }
 
 pub fun initializeDepositorWithoutBalance(_ acct: Test.Account) {
-    txExecutor("depositor/setup.cdc", [acct], [lowBalanceThreshold])
+    txExecutor("depositor/setup_depositor.cdc", [acct], [lowBalanceThreshold])
 }
 
 pub fun getNewDepositor(): Test.Account {
