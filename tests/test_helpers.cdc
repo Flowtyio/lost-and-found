@@ -3,6 +3,8 @@ import Test
 import "ExampleNFT"
 import "ExampleToken"
 
+pub let lowBalanceThreshold = 1.0
+
 // the cadence testing framework allocates 4 addresses for system acounts,
 // and 10 pre-created accounts for us to use for deployments:
 pub let Account0x1 = Address(0x0000000000000001)
@@ -71,6 +73,12 @@ pub fun deployAll() {
 
     mintFlow(exampleNftAccount, 10.0)
     mintFlow(exampleTokenAccount, 10.0)
+
+    txExecutor("depositor/setup.cdc", [exampleNftAccount], [lowBalanceThreshold])
+    txExecutor("depositor/add_flow_tokens.cdc", [exampleNftAccount], [lowBalanceThreshold])
+
+    txExecutor("depositor/setup.cdc", [exampleTokenAccount], [lowBalanceThreshold])
+    txExecutor("depositor/add_flow_tokens.cdc", [exampleTokenAccount], [lowBalanceThreshold])
 }
 
 pub fun deploy(_ name: String, _ path: String, _ arguments: [AnyStruct]) {

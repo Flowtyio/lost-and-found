@@ -165,8 +165,111 @@ pub fun testBorrowTicketsByType_Ft() {
     Test.assertEqual(1, tickets.length)
 }
 
+pub fun testCheckTicketItem() {
+    let acct = getNewAccount()
+    trySendNft(acct)
+    let event = Test.eventsOfType(Type<LostAndFound.TicketDeposited>()).removeLast() as! LostAndFound.TicketDeposited
+
+    let res = scriptExecutor("lost-and-found/check_ticket_item.cdc", [acct.address, event.ticketID, exampleNftIdentifier()])! as! Bool
+    Test.assertEqual(true, res)
+}
+
+pub fun testGetTicketFungibleTokenBalance() {
+    let acct = getNewAccount()
+    let amount = 5.0
+    trySendFt(acct, amount)
+    let event = Test.eventsOfType(Type<LostAndFound.TicketDeposited>()).removeLast() as! LostAndFound.TicketDeposited
+
+    let balance = scriptExecutor("lost-and-found/get_ticket_ft_balance.cdc", [acct.address, event.ticketID, exampleTokenIdentifier()])! as! UFix64
+    Test.assertEqual(amount, balance)
+}
+
+pub fun testGetShelfOwner() {
+    let acct = getNewAccount()
+    trySendNft(acct)
+
+    let owner = scriptExecutor("lost-and-found/get_shelf_owner.cdc", [acct.address])! as! Address
+    Test.assertEqual(lostAndFoundAccount.address, owner)
+}
+
+pub fun testShelfHasType() {
+    let acct = getNewAccount()
+    trySendNft(acct)
+    let hasExampleNFT = scriptExecutor("lost-and-found/shelf_has_type.cdc", [acct.address, exampleNftIdentifier()])! as! Bool
+    Test.assertEqual(true, hasExampleNFT)
+
+    let hasExampleToken = scriptExecutor("lost-and-found/shelf_has_type.cdc", [acct.address, exampleTokenIdentifier()])! as! Bool
+    Test.assertEqual(false, hasExampleToken)
+}
+
+pub fun testDepositor_DepositNft() {
+    let acct = getNewAccount()
+
+    mintAndSendNftWithDepositor(acct)
+
+    let event = Test.eventsOfType(Type<LostAndFound.TicketDeposited>()).removeLast() as! LostAndFound.TicketDeposited
+    Test.assertEqual(event.redeemer, acct.address)
+    Test.assertEqual(exampleNftIdentifier(), event.type.identifier)
+}
+
+pub fun testDepositor_DepositFt() {
+    let acct = getNewAccount()
+    let amount = 5.0
+    mintAndSendExampleTokensWithDepositor(acct, amount)
+
+    let event = Test.eventsOfType(Type<LostAndFound.TicketDeposited>()).removeLast() as! LostAndFound.TicketDeposited
+    Test.assertEqual(event.redeemer, acct.address)
+    Test.assertEqual(exampleTokenIdentifier(), event.type.identifier)
+}
+
+pub fun testDepositor_trySendNft_ValidCapability() {
+    let acct = getNewAccount()
+    setupExampleNft(acct: acct)
+
+    let nftID = trySendNftWithDepositor(acct)
+
+    let event = Test.eventsOfType(Type<ExampleNFT.Deposit>()).removeLast() as! ExampleNFT.Deposit
+    Test.assertEqual(acct.address, event.to!)
+    Test.assertEqual(nftID, event.id)
+}
+
+pub fun testDepositor_trySendNft_InvalidCapability() {
+    let acct = getNewAccount()
+
+    let nftID = trySendNftWithDepositor(acct)
+
+    let event = Test.eventsOfType(Type<LostAndFound.TicketDeposited>()).removeLast() as! LostAndFound.TicketDeposited
+    Test.assertEqual(acct.address, event.redeemer)
+    Test.assertEqual(exampleNftIdentifier(), event.type.identifier)
+}
+
+pub fun testDepositor_trySendFt_ValidCapability() {
+    let acct = getNewAccount()
+    setupExampleToken(acct: acct)
+    let amount = 5.0
+
+    trySendFtWithDepositor(acct, amount)
+    
+    let event = Test.eventsOfType(Type<ExampleToken.TokensDeposited>()).removeLast() as! ExampleToken.TokensDeposited
+    Test.assertEqual(acct.address, event.to!)
+    Test.assertEqual(amount, event.amount)
+}
+
+pub fun testDepositor_trySendFt_InvalidCapability() {
+    let acct = getNewAccount()
+    let amount = 5.0
+
+    trySendFtWithDepositor(acct, amount)
+
+    let event = Test.eventsOfType(Type<LostAndFound.TicketDeposited>()).removeLast() as! LostAndFound.TicketDeposited
+    Test.assertEqual(acct.address, event.redeemer)
+    Test.assertEqual(exampleTokenIdentifier(), event.type.identifier)
+}
+
+// TODO: depositor - withdrawTokens
+// TODO: depositor - addFlowTokens
+// TODO: depositor - balance
 // TODO: send non nft/ft resource
-// TODO: create depositor
 
 pub fun mintAndSendNft(_ acct: Test.Account): UInt64 {
     txExecutor("example-nft/mint_and_deposit_example_nft.cdc", [exampleNftAccount], [acct.address])
@@ -184,4 +287,42 @@ pub fun trySendNft(_ acct: Test.Account): UInt64 {
 
 pub fun trySendFt(_ acct: Test.Account, _ amount: UFix64) {
     txExecutor("example-token/try_send_example_token.cdc", [exampleTokenAccount], [acct.address, amount])
+}
+
+pub fun initializeDepositor(_ acct: Test.Account) {
+    txExecutor("depositor/setup.cdc", [acct], [lowBalanceThreshold])
+    mintFlow(acct, lowBalanceThreshold + 1.0)
+    txExecutor("depositor/add_flow_tokens.cdc", [acct], [lowBalanceThreshold])
+}
+
+pub fun initializeDepositorWithoutBalance(_ acct: Test.Account) {
+    txExecutor("depositor/setup.cdc", [acct], [lowBalanceThreshold])
+}
+
+pub fun getNewDepositor(): Test.Account {
+    let acct = getNewAccount()
+    initializeDepositor(acct)
+    return acct
+}
+
+pub fun mintAndSendNftWithDepositor(_ to: Test.Account): UInt64 {
+    txExecutor("example-nft/mint_and_deposit_with_depositor.cdc", [exampleNftAccount], [to.address])
+    let event = Test.eventsOfType(Type<ExampleNFT.Mint>()).removeLast() as! ExampleNFT.Mint
+
+    return event.id
+}
+
+pub fun mintAndSendExampleTokensWithDepositor(_ to: Test.Account, _ amount: UFix64) {
+    txExecutor("example-token/deposit_example_token_with_depositor.cdc", [exampleTokenAccount], [to.address, amount])
+}
+
+pub fun trySendNftWithDepositor(_ to: Test.Account): UInt64 {
+    txExecutor("example-nft/try_send_example_nft_with_depositor.cdc", [exampleNftAccount], [to.address])
+    let event = Test.eventsOfType(Type<ExampleNFT.Mint>()).removeLast() as! ExampleNFT.Mint
+
+    return event.id
+}
+
+pub fun trySendFtWithDepositor(_ to: Test.Account, _ amount: UFix64) {
+    txExecutor("example-token/try_send_example_token_depositor.cdc", [exampleTokenAccount], [to.address, amount])
 }

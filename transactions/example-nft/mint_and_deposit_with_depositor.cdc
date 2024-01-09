@@ -19,7 +19,7 @@ transaction(recipient: Address) {
     }
 
     execute {
-        let token <- self.minter.mintAndReturnNFT(name: "testname", description: "descr", thumbnail: "image.html", royalties: [])
+        let token <- self.minter.mint(name: "testname", description: "descr", thumbnail: "image.html")
         let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?
         let memo = "test memo"
 
