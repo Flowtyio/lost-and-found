@@ -152,11 +152,20 @@ pub fun testBorrowTicketsByType_Nft() {
     let id = trySendNft(acct)
 
     let tickets = scriptExecutor("example-nft/borrow_all_tickets.cdc", [acct.address])! as! [LostAndFoundHelper.Ticket]
+    Test.assertEqual(1, tickets.length)
+    Test.assertEqual(id, tickets[0].ticketID!)
+}
+
+pub fun testBorrowTicketsByType_Ft() {
+    let acct = getNewAccount()
+    let amount = 5.0
+    trySendFt(acct, amount)
+
+    let tickets = scriptExecutor("example-token/borrow_all_tickets.cdc", [acct.address])! as! [LostAndFoundHelper.Ticket]
+    Test.assertEqual(1, tickets.length)
 }
 
 // TODO: send non nft/ft resource
-// TODO: borrowAllTicketsByType - nft
-// TODO: borrowAllTicketsByType - ft
 // TODO: create depositor
 
 pub fun mintAndSendNft(_ acct: Test.Account): UInt64 {
