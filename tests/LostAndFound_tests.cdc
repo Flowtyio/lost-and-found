@@ -2,6 +2,7 @@ import Test
 import "test_helpers.cdc"
 
 import "LostAndFound"
+import "LostAndFoundHelper"
 import "ExampleNFT"
 import "ExampleToken"
 
@@ -118,8 +119,42 @@ pub fun testGetAddress() {
     Test.assertEqual(lostAndFoundAccount.address, addr)
 }
 
+pub fun testBorrowAllTickets() {
+    let acct = getNewAccount()
+    let amount = 5.0
+    trySendFt(acct, amount)
+    let id = trySendNft(acct)
+
+    let tickets = scriptExecutor("lost-and-found/borrow_all_tickets.cdc", [acct.address])! as! [LostAndFoundHelper.Ticket]
+    Test.assertEqual(2, tickets.length)
+
+    // there should be one nft and one ft ticket
+    var nftID: UInt64? = nil
+    var foundFt = false
+
+    for ticket in tickets {
+        switch ticket.typeIdentifier {
+            case exampleNftIdentifier():
+                nftID = ticket.ticketID
+                break
+            case exampleTokenIdentifier():
+                foundFt = true
+                break
+        }
+    }
+
+    Test.assertEqual(id, nftID!)
+    Test.assertEqual(true, foundFt)
+}
+
+pub fun testBorrowTicketsByType_Nft() {
+    let acct = getNewAccount()
+    let id = trySendNft(acct)
+
+    let tickets = scriptExecutor("example-nft/borrow_all_tickets.cdc", [acct.address])! as! [LostAndFoundHelper.Ticket]
+}
+
 // TODO: send non nft/ft resource
-// TODO: borrowAllTickets for address
 // TODO: borrowAllTicketsByType - nft
 // TODO: borrowAllTicketsByType - ft
 // TODO: create depositor

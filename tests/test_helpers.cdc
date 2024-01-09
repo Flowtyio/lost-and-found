@@ -67,6 +67,7 @@ pub fun deployAll() {
     deploy("ExampleToken", "../contracts/standard/ExampleToken.cdc", [])
     deploy("FeeEstimator", "../contracts/FeeEstimator.cdc", [])
     deploy("LostAndFound", "../contracts/LostAndFound.cdc", [])
+    deploy("LostAndFoundHelper", "../contracts/LostAndFoundHelper.cdc", [])
 
     mintFlow(exampleNftAccount, 10.0)
     mintFlow(exampleTokenAccount, 10.0)
