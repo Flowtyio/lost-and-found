@@ -34,7 +34,8 @@ transaction(recipient: Address) {
 
     execute {
         let exampleNFTReceiver = getAccount(recipient).getCapability<&{NonFungibleToken.CollectionPublic}>(ExampleNFT.CollectionPublicPath)
-        let token <- self.minter.mintAndReturnNFT(name: "testname", description: "descr", thumbnail: "image.html", royalties: []) as! @ExampleNFT.NFT
+
+        let token <- self.minter.mint(name: "testname", description: "descr", thumbnail: "image.html")
         let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?
 
         let memo = "test memo"

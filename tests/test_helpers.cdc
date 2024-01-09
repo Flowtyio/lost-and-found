@@ -138,7 +138,7 @@ pub fun mintExampleTokens(_ acct: Test.Account, _ amount: UFix64) {
 }
 
 pub fun mintFlow(_ receiver: Test.Account, _ amount: UFix64) {
-    let code = Test.readFile("../transactions/flow/mint_flow.cdc    ")
+    let code = loadCode("flow/mint_flow.cdc", "transactions")
     let tx = Test.Transaction(
         code: code,
         authorizers: [Test.serviceAccount().address],
