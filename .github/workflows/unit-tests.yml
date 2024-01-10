@@ -32,7 +32,8 @@ jobs:
         pwd
         ls
         cat ./transactions/depositor/setup_depositor.cdc
-        ls ./transactions/depositor
+        ls transactions
+        ls transactions/depositor
         ./run-tests.sh
     - name: Normalize coverage report filepaths
       run : sh ./normalize_coverage_report.sh
