@@ -18,3 +18,5 @@
 .idea
 node_modules
 creds.*.json
+
+coverage.lcov

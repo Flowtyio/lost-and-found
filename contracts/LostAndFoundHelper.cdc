@@ -1,4 +1,4 @@
-import LostAndFound from "./LostAndFound.cdc"
+import "LostAndFound"
 
 pub contract LostAndFoundHelper {
 

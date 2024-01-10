@@ -21,6 +21,7 @@ pub contract ExampleNFT: NonFungibleToken, ViewResolver {
     pub event ContractInitialized()
     pub event Withdraw(id: UInt64, from: Address?)
     pub event Deposit(id: UInt64, to: Address?)
+    pub event Mint(id: UInt64)
 
     pub event CollectionCreated(id: UInt64)
     pub event CollectionDestroyed(id: UInt64)
@@ -50,6 +51,8 @@ pub contract ExampleNFT: NonFungibleToken, ViewResolver {
             self.description = description
             self.thumbnail = thumbnail
             self.royalties = royalties
+
+            emit Mint(id: self.id)
         }
 
         pub fun setRoyalties(_ royalties: [MetadataViews.Royalty]) {
@@ -238,6 +241,23 @@ pub contract ExampleNFT: NonFungibleToken, ViewResolver {
         ) {
             ExampleNFT.totalSupply = ExampleNFT.totalSupply + 1
             self.mintNFTWithId(recipient: recipient, name: name, description: description, thumbnail: thumbnail, royaltyReceipient: royaltyReceipient, id: ExampleNFT.totalSupply)
+        }
+
+        pub fun mint(
+            name: String,
+            description: String,
+            thumbnail: String,
+        ): @NFT {
+            ExampleNFT.totalSupply = ExampleNFT.totalSupply + 1
+            let newNFT <- create NFT(
+                id: ExampleNFT.totalSupply,
+                name: name,
+                description: description,
+                thumbnail: thumbnail,
+                royalties: []
+            )
+
+            return <- newNFT
         }
 
         pub fun mintNFTWithId(

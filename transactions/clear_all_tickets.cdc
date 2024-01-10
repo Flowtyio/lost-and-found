@@ -1,10 +1,10 @@
-import FlowToken from "../contracts/FlowToken.cdc"
-import FungibleToken from "../contracts/FungibleToken.cdc"
-import NonFungibleToken from "../contracts/NonFungibleToken.cdc"
-import ExampleToken from "../contracts/ExampleToken.cdc"
-import ExampleNFT from "../contracts/ExampleNFT.cdc"
+import "FlowToken"
+import "FungibleToken"
+import "NonFungibleToken"
+import "ExampleToken"
+import "ExampleNFT"
 
-import LostAndFound from "../contracts/LostAndFound.cdc"
+import "LostAndFound"
 
 transaction {
 

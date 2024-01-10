@@ -45,10 +45,10 @@ items that have been sent to them, and another helper to deposit items to a rede
 Deposit an item
 
 ```cadence
-import ExampleNFT from 0xf8d6e0586b0a20c7
-import NonFungibleToken from 0xf8d6e0586b0a20c7
+import "ExampleNFT"
+import "NonFungibleToken"
 
-import LostAndFound from 0xf669cb8d41ce0c74
+import "LostAndFound"
 
 transaction(recipient: Address) {
     // local variable for storing the minter reference
@@ -88,10 +88,10 @@ transaction(recipient: Address) {
 Redeem them all
 
 ```cadence
-import ExampleNFT from 0xf8d6e0586b0a20c7
-import NonFungibleToken from 0xf8d6e0586b0a20c7
+import "ExampleNFT"
+import "NonFungibleToken"
 
-import LostAndFound from 0xf669cb8d41ce0c74
+import "LostAndFound"
 
 transaction() {
     let receiver: Capability<&{NonFungibleToken.CollectionPublic}>
@@ -127,10 +127,10 @@ transaction() {
 Deposit a vault
 
 ```cadence
-import FungibleToken from 0xee82856bf20e2aa6
-import ExampleToken from 0xf8d6e0586b0a20c7
+import "FungibleToken"
+import "ExampleToken"
 
-import LostAndFound from 0xf669cb8d41ce0c74
+import "LostAndFound"
 
 transaction(redeemer: Address, amount: UFix64) {
     let tokenAdmin: &ExampleToken.Administrator
@@ -169,10 +169,10 @@ transaction(redeemer: Address, amount: UFix64) {
 Redeem them
 
 ```cadence
-import ExampleToken from 0xf8d6e0586b0a20c7
-import FungibleToken from 0xee82856bf20e2aa6
+import "ExampleToken"
+import "FungibleToken"
 
-import LostAndFound from 0xf669cb8d41ce0c74
+import "LostAndFound"
 
 transaction() {
     let receiver: Capability<&{FungibleToken.Receiver}>
@@ -219,9 +219,9 @@ check the balance against this value and emit an event when the balance is less 
 
 ### Initialize the depositor
 ```cadence
-import LostAndFound from 0xf8d6e0586b0a20c7
-import FungibleToken from 0xee82856bf20e2aa6
-import FlowToken from 0xf8d6e0586b0a20c7
+import "LostAndFound"
+import "FungibleToken"
+import "FlowToken"
 
 
 transaction {
@@ -238,9 +238,9 @@ transaction {
 
 ### Add Flow tokens to the Depositor 
 ```cadence
-import LostAndFound from 0xf8d6e0586b0a20c7
-import FungibleToken from 0xee82856bf20e2aa6
-import FlowToken from 0xf8d6e0586b0a20c7
+import "LostAndFound"
+import "FungibleToken"
+import "FlowToken"
 
 transaction(amount: UFix64) {
     prepare(acct: AuthAccount) {
@@ -257,13 +257,13 @@ transaction(amount: UFix64) {
 ### Deposit through the Depositor
 ```cadence
 
-import FlowToken from 0xf8d6e0586b0a20c7
-import FungibleToken from 0xee82856bf20e2aa6
-import ExampleNFT from 0xf8d6e0586b0a20c7
-import NonFungibleToken from 0xf8d6e0586b0a20c7
-import MetadataViews from 0xf8d6e0586b0a20c7
+import "FlowToken"
+import "FungibleToken"
+import "ExampleNFT"
+import "NonFungibleToken"
+import "MetadataViews"
 
-import LostAndFound from 0xf8d6e0586b0a20c7
+import "LostAndFound"
 
 transaction(recipient: Address) {
     // local variable for storing the minter reference
@@ -308,7 +308,7 @@ LostAndFound has a few helper functions to make it easier for you to discover wh
 
 ### Get all types deposited to an address
 ```cadence
-import LostAndFound from 0xf8d6e0586b0a20c7
+import "LostAndFound"
 
 pub fun main(addr: Address): [Type] {
     let shelfManager = LostAndFound.borrowShelfManager()
@@ -324,7 +324,7 @@ pub fun main(addr: Address): [Type] {
 ### Borrow all tickets of all types
 
 ```cadence
-import LostAndFound from 0xf8d6e0586b0a20c7
+import "LostAndFound"
 
 pub fun main(addr: Address): [&LostAndFound.Ticket] {
     return LostAndFound.borrowAllTickets(addr: addr)
@@ -334,8 +334,8 @@ pub fun main(addr: Address): [&LostAndFound.Ticket] {
 ### Borrow all tickets of a type
 ```cadence
 
-import LostAndFound from 0xf8d6e0586b0a20c7
-import ExampleNFT from 0xf8d6e0586b0a20c7
+import "LostAndFound"
+import "ExampleNFT"
 
 pub fun main(addr: Address): [&LostAndFound.Ticket] {
     return LostAndFound.borrowAllTicketsByType(addr: addr, type: Type<@ExampleNFT.NFT>())

@@ -1,4 +1,4 @@
-import LostAndFound from "../contracts/LostAndFound.cdc"
+import "LostAndFound"
 
 pub fun main(addr: Address): [Type] {
     let shelfManager = LostAndFound.borrowShelfManager()
