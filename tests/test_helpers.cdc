@@ -3,30 +3,30 @@ import Test
 import "ExampleNFT"
 import "ExampleToken"
 
-pub let lowBalanceThreshold = 1.0
+access(all) let lowBalanceThreshold = 1.0
 
 // the cadence testing framework allocates 4 addresses for system acounts,
 // and 10 pre-created accounts for us to use for deployments:
-pub let Account0x1 = Address(0x0000000000000001)
-pub let Account0x2 = Address(0x0000000000000002)
-pub let Account0x3 = Address(0x0000000000000003)
-pub let Account0x4 = Address(0x0000000000000004)
-pub let Account0x5 = Address(0x0000000000000005)
-pub let Account0x6 = Address(0x0000000000000006)
-pub let Account0x7 = Address(0x0000000000000007)
-pub let Account0x8 = Address(0x0000000000000008)
-pub let Account0x9 = Address(0x0000000000000009)
-pub let Account0xa = Address(0x000000000000000a)
-pub let Account0xb = Address(0x000000000000000b)
-pub let Account0xc = Address(0x000000000000000c)
-pub let Account0xd = Address(0x000000000000000d)
-pub let Account0xe = Address(0x000000000000000e)
+access(all) let Account0x1 = Address(0x0000000000000001)
+access(all) let Account0x2 = Address(0x0000000000000002)
+access(all) let Account0x3 = Address(0x0000000000000003)
+access(all) let Account0x4 = Address(0x0000000000000004)
+access(all) let Account0x5 = Address(0x0000000000000005)
+access(all) let Account0x6 = Address(0x0000000000000006)
+access(all) let Account0x7 = Address(0x0000000000000007)
+access(all) let Account0x8 = Address(0x0000000000000008)
+access(all) let Account0x9 = Address(0x0000000000000009)
+access(all) let Account0xa = Address(0x000000000000000a)
+access(all) let Account0xb = Address(0x000000000000000b)
+access(all) let Account0xc = Address(0x000000000000000c)
+access(all) let Account0xd = Address(0x000000000000000d)
+access(all) let Account0xe = Address(0x000000000000000e)
 
-pub let lostAndFoundAccount = Test.getAccount(Account0x5)
-pub let exampleNftAccount = Test.getAccount(Account0x6)
-pub let exampleTokenAccount = Test.getAccount(Account0x7)
+access(all) let lostAndFoundAccount = Test.getAccount(Account0x5)
+access(all) let exampleNftAccount = Test.getAccount(Account0x6)
+access(all) let exampleTokenAccount = Test.getAccount(Account0x7)
 
-pub fun scriptExecutor(_ scriptName: String, _ arguments: [AnyStruct]): AnyStruct? {
+access(all) fun scriptExecutor(_ scriptName: String, _ arguments: [AnyStruct]): AnyStruct? {
     let scriptCode = loadCode(scriptName, "scripts")
     let scriptResult = Test.executeScript(scriptCode, arguments)
 
@@ -37,7 +37,7 @@ pub fun scriptExecutor(_ scriptName: String, _ arguments: [AnyStruct]): AnyStruc
     return scriptResult.returnValue
 }
 
-pub fun txExecutor(_ txName: String, _ signers: [Test.Account], _ arguments: [AnyStruct]): Test.TransactionResult {
+access(all) fun txExecutor(_ txName: String, _ signers: [Test.TestAccount], _ arguments: [AnyStruct]): Test.TransactionResult {
     let txCode = loadCode(txName, "transactions")
 
     let authorizers: [Address] = []
@@ -60,11 +60,11 @@ pub fun txExecutor(_ txName: String, _ signers: [Test.Account], _ arguments: [An
     return txResult
 }
 
-pub fun loadCode(_ fileName: String, _ baseDirectory: String): String {
+access(all) fun loadCode(_ fileName: String, _ baseDirectory: String): String {
     return Test.readFile("../".concat(baseDirectory).concat("/").concat(fileName))
 }
 
-pub fun deployAll() {
+access(all) fun deployAll() {
     deploy("ExampleNFT", "../contracts/standard/ExampleNFT.cdc", [])
     deploy("ExampleToken", "../contracts/standard/ExampleToken.cdc", [])
     deploy("FeeEstimator", "../contracts/FeeEstimator.cdc", [])
@@ -72,72 +72,72 @@ pub fun deployAll() {
     deploy("LostAndFoundHelper", "../contracts/LostAndFoundHelper.cdc", [])
 }
 
-pub fun deploy(_ name: String, _ path: String, _ arguments: [AnyStruct]) {
+access(all) fun deploy(_ name: String, _ path: String, _ arguments: [AnyStruct]) {
     let err = Test.deployContract(name: name, path: path, arguments: arguments)
     Test.expect(err, Test.beNil()) 
 }
 
 // Example NFT constants
-pub let exampleNftStoragePath = /storage/exampleNFTCollection
-pub let exampleNftPublicPath = /public/exampleNFTCollection
-pub let exampleNftProviderPath = /private/exampleNFTCollection
+access(all) let exampleNftStoragePath = /storage/exampleNFTCollection
+access(all) let exampleNftPublicPath = /public/exampleNFTCollection
+access(all) let exampleNftProviderPath = /private/exampleNFTCollection
 
 // Example Token constants
-pub let exampleTokenStoragePath = /storage/exampleTokenVault
-pub let exampleTokenReceiverPath = /public/exampleTokenReceiver
-pub let exampleTokenProviderPath = /private/exampleTokenProvider
-pub let exampleTokenBalancePath = /public/exampleTokenBalance
+access(all) let exampleTokenStoragePath = /storage/exampleTokenVault
+access(all) let exampleTokenReceiverPath = /public/exampleTokenReceiver
+access(all) let exampleTokenProviderPath = /private/exampleTokenProvider
+access(all) let exampleTokenBalancePath = /public/exampleTokenBalance
 
-pub fun exampleNftIdentifier(): String {
+access(all) fun exampleNftIdentifier(): String {
     return Type<@ExampleNFT.NFT>().identifier
 }
 
-pub fun exampleTokenIdentifier(): String {
+access(all) fun exampleTokenIdentifier(): String {
     return Type<@ExampleToken.Vault>().identifier
 }
 
-pub fun getNewAccount(): Test.Account {
+access(all) fun getNewAccount(): Test.TestAccount {
     let acct = Test.createAccount()
     return acct
 }
 
-pub fun setupExampleToken(acct: Test.Account) {
+access(all) fun setupExampleToken(acct: Test.TestAccount) {
     txExecutor("example-token/setup.cdc", [acct], [])
 }
 
-pub fun setupExampleNft(acct: Test.Account) {
+access(all) fun setupExampleNft(acct: Test.TestAccount) {
     txExecutor("example-nft/setup.cdc", [acct], [])
 }
 
-pub fun mintExampleNfts(_ acct: Test.Account, _ num: Int): [UInt64] {
+access(all) fun mintExampleNfts(_ acct: Test.TestAccount, _ num: Int): [UInt64] {
     let txRes = txExecutor("example-nft/mint_example_nft.cdc", [exampleNftAccount], [acct.address, num])
     let events = Test.eventsOfType(Type<ExampleNFT.Deposit>())
 
     let ids: [UInt64] = []
     while ids.length < num {
-        let event = events.removeLast() as! ExampleNFT.Deposit
-        ids.append(event.id)
+        let e = events.removeLast() as! ExampleNFT.Deposit
+        ids.append(e.id)
     }
 
     return ids
 }
 
-pub fun mintExampleNftByID(_ acct: Test.Account, _ id: UInt64): UInt64 {
+access(all) fun mintExampleNftByID(_ acct: Test.TestAccount, _ id: UInt64): UInt64 {
     post {
         result == id
     }
 
     let txRes = txExecutor("example-nft/mint_example_nft_with_id.cdc", [exampleNftAccount], [acct.address, id])
     let events = Test.eventsOfType(Type<ExampleNFT.Deposit>())
-    let event = events.removeLast() as! ExampleNFT.Deposit
-    return event.id
+    let e = events.removeLast() as! ExampleNFT.Deposit
+    return e.id
 }
 
-pub fun mintExampleTokens(_ acct: Test.Account, _ amount: UFix64) {
+access(all) fun mintExampleTokens(_ acct: Test.TestAccount, _ amount: UFix64) {
     txExecutor("example-token/mint.cdc", [exampleTokenAccount], [acct.address, amount])
 }
 
-pub fun mintFlow(_ receiver: Test.Account, _ amount: UFix64) {
+access(all) fun mintFlow(_ receiver: Test.TestAccount, _ amount: UFix64) {
     let code = loadCode("flow/mint_flow.cdc", "transactions")
     let tx = Test.Transaction(
         code: code,
@@ -151,17 +151,17 @@ pub fun mintFlow(_ receiver: Test.Account, _ amount: UFix64) {
     }
 }
 
-pub fun initializeDepositor(_ acct: Test.Account) {
+access(all) fun initializeDepositor(_ acct: Test.TestAccount) {
     txExecutor("depositor/setup_depositor.cdc", [acct], [lowBalanceThreshold])
     mintFlow(acct, lowBalanceThreshold + 1.0)
     txExecutor("depositor/add_flow_tokens.cdc", [acct], [lowBalanceThreshold])
 }
 
-pub fun initializeDepositorWithoutBalance(_ acct: Test.Account) {
+access(all) fun initializeDepositorWithoutBalance(_ acct: Test.TestAccount) {
     txExecutor("depositor/setup_depositor.cdc", [acct], [lowBalanceThreshold])
 }
 
-pub fun getNewDepositor(): Test.Account {
+access(all) fun getNewDepositor(): Test.TestAccount {
     let acct = getNewAccount()
     initializeDepositor(acct)
     return acct
