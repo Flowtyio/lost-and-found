@@ -275,11 +275,6 @@ pub fun testDepositor_trySendFt_InvalidCapability() {
     Test.assertEqual(exampleTokenIdentifier(), event.type.identifier)
 }
 
-// TODO: depositor - withdrawTokens
-// TODO: depositor - addFlowTokens
-// TODO: depositor - balance
-// TODO: send non nft/ft resource
-
 pub fun mintAndSendNft(_ acct: Test.Account): UInt64 {
     txExecutor("example-nft/mint_and_deposit_example_nft.cdc", [exampleNftAccount], [acct.address])
     let event = Test.eventsOfType(Type<ExampleNFT.Mint>()).removeLast() as! ExampleNFT.Mint
