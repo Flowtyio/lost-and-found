@@ -8,6 +8,15 @@ import "ExampleToken"
 
 pub fun setup() {
     deployAll()
+
+    mintFlow(exampleNftAccount, 10.0)
+    mintFlow(exampleTokenAccount, 10.0)
+
+    txExecutor("depositor/setup_depositor.cdc", [exampleNftAccount], [lowBalanceThreshold])
+    txExecutor("depositor/add_flow_tokens.cdc", [exampleNftAccount], [lowBalanceThreshold])
+
+    txExecutor("depositor/setup_depositor.cdc", [exampleTokenAccount], [lowBalanceThreshold])
+    txExecutor("depositor/add_flow_tokens.cdc", [exampleTokenAccount], [lowBalanceThreshold])
 }
 
 pub fun testImport() {

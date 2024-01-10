@@ -70,15 +70,6 @@ pub fun deployAll() {
     deploy("FeeEstimator", "../contracts/FeeEstimator.cdc", [])
     deploy("LostAndFound", "../contracts/LostAndFound.cdc", [])
     deploy("LostAndFoundHelper", "../contracts/LostAndFoundHelper.cdc", [])
-
-    mintFlow(exampleNftAccount, 10.0)
-    mintFlow(exampleTokenAccount, 10.0)
-
-    txExecutor("depositor/setup_depositor.cdc", [exampleNftAccount], [lowBalanceThreshold])
-    txExecutor("depositor/add_flow_tokens.cdc", [exampleNftAccount], [lowBalanceThreshold])
-
-    txExecutor("depositor/setup_depositor.cdc", [exampleTokenAccount], [lowBalanceThreshold])
-    txExecutor("depositor/add_flow_tokens.cdc", [exampleTokenAccount], [lowBalanceThreshold])
 }
 
 pub fun deploy(_ name: String, _ path: String, _ arguments: [AnyStruct]) {
