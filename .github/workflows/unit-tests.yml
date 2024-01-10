@@ -31,7 +31,9 @@ jobs:
       run: |
         pwd
         ls
-        sh ./run-tests.sh
+        cat ./transactions/depositor/setup_depositor.cdc
+        ls ./transactions/depositor
+        ./run-tests.sh
     - name: Normalize coverage report filepaths
       run : sh ./normalize_coverage_report.sh
     - name: Upload coverage reports to Codecov
