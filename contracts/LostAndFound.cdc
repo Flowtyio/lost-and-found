@@ -380,6 +380,8 @@ access(all) contract LostAndFound {
                     let vault <- provider.withdraw(amount: LostAndFound.storageFees[uuid]!)
                     flowTokenRepayment!.borrow()!.deposit(from: <-vault)
                 }
+
+                bin.safeDestroy()
                 destroy bin
             }
         }
@@ -605,8 +607,9 @@ access(all) contract LostAndFound {
         }
 
         access(contract) fun safeDestroy() {
-            let v <- self.flowTokenVault.withdraw(amount: self.flowTokenVault.balance)
-            self.flowTokenRepayment.borrow()!.deposit(from: <-v)
+            pre {
+                self.flowTokenVault.balance == 0.0: "depositor still has flow tokens to be withdrawn"
+            }
         }
     }
 
@@ -736,9 +739,6 @@ access(all) contract LostAndFound {
         if cap.check<&{NonFungibleToken.Collection}>() {
             let nft <- item as! @{NonFungibleToken.NFT}
             cap.borrow<&{NonFungibleToken.Collection}>()!.deposit(token: <-nft)
-        } else if cap.check<&{NonFungibleToken.Receiver}>() {
-            let nft <- item as! @{NonFungibleToken.NFT}
-            cap.borrow<&{NonFungibleToken.Receiver}>()!.deposit(token: <-nft)
         } else if cap.check<&{FungibleToken.Receiver}>() {
             let vault <- item as! @{FungibleToken.Vault}
             cap.borrow<&{FungibleToken.Receiver}>()!.deposit(from: <-vault)
