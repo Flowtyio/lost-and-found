@@ -253,11 +253,8 @@ access(all) contract LostAndFound {
         }
 
         access(contract) fun safeDestroy() {
-            let ids = self.tickets.keys
-            for id in ids {
-                let ticket <- self.tickets.remove(key: id)!
-                ticket.safeDestroy()
-                destroy ticket
+            pre {
+                self.tickets.length == 0: "cannot destroy bin with tickets in it"
             }
         }
     }
