@@ -253,13 +253,13 @@ access(all) contract LostAndFound {
         }
 
         access(contract) fun safeDestroy() {
-
+            let ids = self.tickets.keys
+            for id in ids {
+                let ticket <- self.tickets.remove(key: id)!
+                ticket.safeDestroy()
+                destroy ticket
+            }
         }
-
-        // destroy () {
-        //     destroy <-self.tickets
-        //     LostAndFound.storageFees.remove(key: self.uuid)
-        // }
     }
 
     // A shelf is our top-level organization resource.
@@ -385,12 +385,8 @@ access(all) contract LostAndFound {
         }
 
         access(contract) fun safeDestroy() {
-            let ids = self.bins.keys
-            for id in ids {
-                let bin <- self.bins.remove(key: id)!
-                assert(bin.tickets.length == 0, message: "cannot destroy a bin with tickets in it")
-                bin.safeDestroy()
-                destroy bin
+            pre {
+                self.bins.length == 0: "cannot destroy a shelf with bins in it"
             }
             LostAndFound.storageFees.remove(key: self.uuid)
         }
@@ -493,9 +489,8 @@ access(all) contract LostAndFound {
         }
         
         access(contract) fun safeDestroy() {
-            let ids = self.shelves.keys
-            for id in ids {
-                self.deleteShelf(id)
+            pre {
+                self.shelves.length == 0: "cannot destroy shelf manager when it has shelves"
             }
         }
     }
