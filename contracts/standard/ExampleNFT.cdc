@@ -410,8 +410,8 @@ access(all) contract ExampleNFT: ViewResolver {
         self.account.capabilities.publish(cap, at: self.CollectionPublicPath)
 
         // Create a Minter resource and save it to storage
-        // let minter <- create NFTMinter()
-        // self.account.save(<-minter, to: self.MinterStoragePath)
+        let minter <- create NFTMinter()
+        self.account.storage.save(<-minter, to: self.MinterStoragePath)
         let minterCap = self.account.capabilities.storage.issue<&ExampleNFT.NFTMinter>(self.MinterStoragePath)
         self.account.capabilities.publish(minterCap, at: self.MinterPublicPath)
 

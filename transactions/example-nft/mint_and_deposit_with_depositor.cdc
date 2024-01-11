@@ -9,13 +9,13 @@ import "LostAndFound"
 transaction(recipient: Address) {
     // local variable for storing the minter reference
     let minter: &ExampleNFT.NFTMinter
-    let depositor: &LostAndFound.Depositor
+    let depositor: auth(LostAndFound.Deposit) &LostAndFound.Depositor
 
-    prepare(acct: AuthAccount) {
+    prepare(acct: auth(Storage, Capabilities) &Account) {
         // borrow a reference to the NFTMinter resource in storage
-        self.minter = acct.borrow<&ExampleNFT.NFTMinter>(from: /storage/exampleNFTMinter)
+        self.minter = acct.storage.borrow<&ExampleNFT.NFTMinter>(from: /storage/exampleNFTMinter)
             ?? panic("Could not borrow a reference to the NFT minter")
-        self.depositor = acct.borrow<&LostAndFound.Depositor>(from: LostAndFound.DepositorStoragePath)!
+        self.depositor = acct.storage.borrow<auth(LostAndFound.Deposit) &LostAndFound.Depositor>(from: LostAndFound.DepositorStoragePath)!
     }
 
     execute {

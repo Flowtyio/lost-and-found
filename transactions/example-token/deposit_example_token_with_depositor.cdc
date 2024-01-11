@@ -6,12 +6,12 @@ import "LostAndFound"
 
 transaction(recipient: Address, amount: UFix64) {
     let tokenAdmin: &ExampleToken.Administrator
-    let depositor: &LostAndFound.Depositor
+    let depositor: auth(LostAndFound.Deposit) &LostAndFound.Depositor
 
-    prepare(acct: AuthAccount) {
-        self.tokenAdmin = acct.borrow<&ExampleToken.Administrator>(from: /storage/exampleTokenAdmin)
+    prepare(acct: auth(Storage, Capabilities) &Account) {
+        self.tokenAdmin = acct.storage.borrow<&ExampleToken.Administrator>(from: /storage/exampleTokenAdmin)
             ?? panic("acct is not the token admin")
-        self.depositor = acct.borrow<&LostAndFound.Depositor>(from: LostAndFound.DepositorStoragePath)!
+        self.depositor = acct.storage.borrow<auth(LostAndFound.Deposit) &LostAndFound.Depositor>(from: LostAndFound.DepositorStoragePath)!
     }
 
     execute {

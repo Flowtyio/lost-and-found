@@ -189,8 +189,6 @@ access(all) contract LostAndFound {
             }
 
             LostAndFound.storageFees.remove(key: self.uuid)
-            let item <- self.takeItem()
-            destroy item
         }
     }
 
