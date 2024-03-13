@@ -24,6 +24,15 @@
         "mainnet": "0x473d6a2c37eab5be" 
       }
     },
+    "GenericReceiver": {
+      "source": "./contracts/GenericReceiver.cdc",
+      "aliases": {
+        "testing": "0x0000000000000005",
+        "emulator": "0xf8d6e0586b0a20c7",
+        "testnet": "0xbe4635353f55bbd4",
+        "mainnet": "0x473d6a2c37eab5be" 
+      }
+    },
     "FeeEstimator": {
       "source": "./contracts/FeeEstimator.cdc",
       "aliases": {
@@ -150,6 +159,7 @@
         "ExampleNFT",
         "ExampleToken",
         "LostAndFound",
+        "GenericReceiver",
         "FeeEstimator",
         "LostAndFoundHelper",
         "ViewResolver",
