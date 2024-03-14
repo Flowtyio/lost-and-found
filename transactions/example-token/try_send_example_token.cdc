@@ -7,7 +7,7 @@ import "LostAndFound"
 transaction(recipient: Address, amount: UFix64, revoke: Bool) {
     let tokenAdmin: &ExampleToken.Administrator
 
-    let flowProvider: Capability<auth(FungibleToken.Withdrawable) &FlowToken.Vault>
+    let flowProvider: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
     let flowReceiver: Capability<&FlowToken.Vault>
     let receiverCap: Capability<&{FungibleToken.Vault}>
 
@@ -21,17 +21,17 @@ transaction(recipient: Address, amount: UFix64, revoke: Bool) {
         self.tokenAdmin = sender.storage.borrow<&ExampleToken.Administrator>(from: /storage/exampleTokenAdmin)
             ?? panic("acct is not the token admin")
 
-        var provider: Capability<auth(FungibleToken.Withdrawable) &FlowToken.Vault>? = nil
+        var provider: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>? = nil
         sender.capabilities.storage.forEachController(forPath: /storage/flowTokenVault, fun(c: &StorageCapabilityController): Bool {
-            if c.borrowType == Type<auth(FungibleToken.Withdrawable) &FlowToken.Vault>() {
-                provider = c.capability as! Capability<auth(FungibleToken.Withdrawable) &FlowToken.Vault>
+            if c.borrowType == Type<auth(FungibleToken.Withdraw) &FlowToken.Vault>() {
+                provider = c.capability as! Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
             }
 
             return true
         })
 
         if provider == nil {
-            provider = sender.capabilities.storage.issue<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(/storage/flowTokenVault)
+            provider = sender.capabilities.storage.issue<auth(FungibleToken.Withdraw) &FlowToken.Vault>(/storage/flowTokenVault)
         }
 
         self.flowProvider = provider!
@@ -57,7 +57,7 @@ transaction(recipient: Address, amount: UFix64, revoke: Bool) {
             cap: self.receiverCap,
             memo: nil,
             display: nil,
-            storagePayment: &storageFee,
+            storagePayment: &storageFee as auth(FungibleToken.Withdraw) &{FungibleToken.Vault},
             flowTokenRepayment: self.flowReceiver
         )
 

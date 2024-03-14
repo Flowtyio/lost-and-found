@@ -27,7 +27,7 @@ transaction {
         }
 
         var foundProvider = false
-        let providerSubtype = Type<auth(FungibleToken.Withdrawable) &{FungibleToken.Vault}>()
+        let providerSubtype = Type<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>()
         let caps = acct.capabilities.storage.forEachController(forPath: storagePath, fun(c: &StorageCapabilityController): Bool {
             if providerSubtype.isSubtype(of: c.borrowType) {
                 foundProvider = true
@@ -39,7 +39,7 @@ transaction {
             return
         }
 
-        let cap = acct.capabilities.storage.issue<auth(FungibleToken.Withdrawable) &{FungibleToken.Vault}>(storagePath)
+        let cap = acct.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(storagePath)
         assert(cap.check(), message: "unable to issue provider capability")
     }
 }

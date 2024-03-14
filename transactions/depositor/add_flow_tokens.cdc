@@ -4,7 +4,7 @@ import "FlowToken"
 
 transaction(amount: UFix64) {
     prepare(acct: auth(Storage) &Account) {
-        let flowVault = acct.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(from: /storage/flowTokenVault)!
+        let flowVault = acct.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: /storage/flowTokenVault)!
         let tokens <- flowVault.withdraw(amount: amount)
         let vault <-tokens as! @FlowToken.Vault
 

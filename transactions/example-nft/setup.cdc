@@ -13,7 +13,7 @@ transaction {
             )
         }
 
-        let cd = ExampleNFT.resolveView(Type<MetadataViews.NFTCollectionData>())! as! MetadataViews.NFTCollectionData
+        let cd = ExampleNFT.resolveContractView(resourceType: nil, viewType: Type<MetadataViews.NFTCollectionData>())! as! MetadataViews.NFTCollectionData
 
         var pubCap = signer.capabilities.get<&ExampleNFT.Collection>(cd.publicPath)
         if pubCap == nil {
@@ -28,7 +28,7 @@ transaction {
 
         // ensure there is a provider path for this collection
         var foundProvider = false
-        let providerSubtype = Type<auth(NonFungibleToken.Withdrawable) &{NonFungibleToken.Collection}>()
+        let providerSubtype = Type<auth(NonFungibleToken.Withdraw) &{NonFungibleToken.Collection}>()
         let caps = signer.capabilities.storage.forEachController(forPath: cd.storagePath, fun(c: &StorageCapabilityController): Bool {
             if providerSubtype.isSubtype(of: c.borrowType) {
                 foundProvider = true
@@ -40,7 +40,7 @@ transaction {
             return
         }
 
-        let cap = signer.capabilities.storage.issue<auth(NonFungibleToken.Withdrawable) &{NonFungibleToken.Collection}>(cd.storagePath)
+        let cap = signer.capabilities.storage.issue<auth(NonFungibleToken.Withdraw) &{NonFungibleToken.Collection}>(cd.storagePath)
         assert(cap.check(), message: "unable to issue provider capability")
     }
 }

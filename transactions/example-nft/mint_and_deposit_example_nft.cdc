@@ -10,7 +10,7 @@ transaction(recipient: Address) {
     // local variable for storing the minter reference
     let minter: &ExampleNFT.NFTMinter
 
-    let flowProvider: Capability<auth(FungibleToken.Withdrawable) &FlowToken.Vault>
+    let flowProvider: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
     let flowReceiver: Capability<&FlowToken.Vault>
     let nftReceiverCap: Capability<&{NonFungibleToken.Collection}>
 
@@ -19,17 +19,17 @@ transaction(recipient: Address) {
         self.minter = sender.storage.borrow<&ExampleNFT.NFTMinter>(from: /storage/exampleNFTMinter)
             ?? panic("Could not borrow a reference to the NFT minter")
 
-        var provider: Capability<auth(FungibleToken.Withdrawable) &FlowToken.Vault>? = nil
+        var provider: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>? = nil
         sender.capabilities.storage.forEachController(forPath: /storage/flowTokenVault, fun(c: &StorageCapabilityController): Bool {
-            if c.borrowType == Type<auth(FungibleToken.Withdrawable) &FlowToken.Vault>() {
-                provider = c.capability as! Capability<auth(FungibleToken.Withdrawable) &FlowToken.Vault>
+            if c.borrowType == Type<auth(FungibleToken.Withdraw) &FlowToken.Vault>() {
+                provider = c.capability as! Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
             }
 
             return true
         })
 
         if provider == nil {
-            provider = sender.capabilities.storage.issue<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(/storage/flowTokenVault)
+            provider = sender.capabilities.storage.issue<auth(FungibleToken.Withdraw) &FlowToken.Vault>(/storage/flowTokenVault)
         }
 
         self.flowProvider = provider!
@@ -52,7 +52,7 @@ transaction(recipient: Address) {
             cap: self.nftReceiverCap,
             memo: memo,
             display: display,
-            storagePayment: &storageFee,
+            storagePayment: &storageFee as auth(FungibleToken.Withdraw) &{FungibleToken.Vault},
             flowTokenRepayment: self.flowReceiver
         )
 

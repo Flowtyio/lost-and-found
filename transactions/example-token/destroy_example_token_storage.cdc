@@ -5,10 +5,10 @@ import "ExampleToken"
 import "LostAndFound"
 
 transaction {
-    prepare(signer: AuthAccount) {
-        let resource <- signer.load<@AnyResource>(from: /storage/exampleTokenVault)
-        destroy resource
-        signer.unlink(/public/exampleTokenReceiver)
-        signer.unlink(/public/exampleTokenBalance)
+    prepare(signer: auth(Storage, Capabilities) &Account) {
+        destroy signer.storage.load<@AnyResource>(from: /storage/exampleTokenVault)
+        
+        signer.capabilities.unpublish(/public/exampleTokenReceiver)
+        signer.capabilities.unpublish(/public/exampleTokenBalance)
     }
 }

@@ -1,4 +1,6 @@
 import "FungibleToken"
+import "MetadataViews"
+import "FungibleTokenMetadataViews"
 
 access(all) contract ExampleToken {
 
@@ -78,6 +80,10 @@ access(all) contract ExampleToken {
             return /public/exampleTokenPublic
         }
 
+        access(all) view fun isAvailableToWithdraw(amount: UFix64): Bool {
+            return self.balance >= amount
+        }
+
         /// withdraw
         ///
         /// Function that takes an amount as an argument
@@ -88,7 +94,7 @@ access(all) contract ExampleToken {
         /// created Vault to the context that called so it can be deposited
         /// elsewhere.
         ///
-        access(FungibleToken.Withdrawable) fun withdraw(amount: UFix64): @{FungibleToken.Vault} {
+        access(FungibleToken.Withdraw) fun withdraw(amount: UFix64): @{FungibleToken.Vault} {
             self.balance = self.balance - amount
             emit TokensWithdrawn(amount: amount, from: self.owner?.address)
             return <-create Vault(balance: amount)
@@ -123,6 +129,14 @@ access(all) contract ExampleToken {
 
         access(all) fun createEmptyVault(): @Vault {
             return <- ExampleToken.createEmptyVault()
+        }
+
+        access(all) view fun getViews(): [Type] {
+            return ExampleToken.getContractViews(resourceType: nil)
+        }
+
+        access(all) fun resolveView(_ view: Type): AnyStruct? {
+            return ExampleToken.resolveContractView(resourceType: nil, viewType: view)
         }
     }
 
@@ -207,6 +221,57 @@ access(all) contract ExampleToken {
             destroy vault
             emit TokensBurned(amount: amount)
         }
+    }
+
+    access(all) view fun getContractViews(resourceType: Type?): [Type] {
+        return [Type<FungibleTokenMetadataViews.FTView>(),
+                Type<FungibleTokenMetadataViews.FTDisplay>(),
+                Type<FungibleTokenMetadataViews.FTVaultData>(),
+                Type<FungibleTokenMetadataViews.TotalSupply>()]
+    }
+
+    access(all) fun resolveContractView(resourceType: Type?, viewType: Type): AnyStruct? {
+        switch viewType {
+            case Type<FungibleTokenMetadataViews.FTView>():
+                return FungibleTokenMetadataViews.FTView(
+                    ftDisplay: self.resolveContractView(resourceType: nil, viewType: Type<FungibleTokenMetadataViews.FTDisplay>()) as! FungibleTokenMetadataViews.FTDisplay?,
+                    ftVaultData: self.resolveContractView(resourceType: nil, viewType: Type<FungibleTokenMetadataViews.FTVaultData>()) as! FungibleTokenMetadataViews.FTVaultData?
+                )
+            case Type<FungibleTokenMetadataViews.FTDisplay>():
+                let media = MetadataViews.Media(
+                        file: MetadataViews.HTTPFile(
+                        url: ""
+                    ),
+                    mediaType: "image/svg+xml"
+                )
+                let medias = MetadataViews.Medias([media])
+                return FungibleTokenMetadataViews.FTDisplay(
+                    name: "FLOW Network Token",
+                    symbol: "FLOW",
+                    description: "FLOW is the native token for the Flow blockchain. It is required for securing the network, transaction fees, storage fees, staking, FLIP voting and may be used by applications built on the Flow Blockchain",
+                    externalURL: MetadataViews.ExternalURL("https://flow.com"),
+                    logos: medias,
+                    socials: {
+                        "twitter": MetadataViews.ExternalURL("https://twitter.com/flow_blockchain")
+                    }
+                )
+            case Type<FungibleTokenMetadataViews.FTVaultData>():
+                let vaultRef = ExampleToken.account.storage.borrow<auth(FungibleToken.Withdraw) &ExampleToken.Vault>(from: /storage/exampleTokenVault)
+			        ?? panic("Could not borrow reference to the contract's Vault!")
+                return FungibleTokenMetadataViews.FTVaultData(
+                    storagePath: /storage/flowTokenVault,
+                    receiverPath: /public/flowTokenReceiver,
+                    metadataPath: /public/flowTokenBalance,
+                    receiverLinkedType: Type<&{FungibleToken.Receiver, FungibleToken.Vault}>(),
+                    metadataLinkedType: Type<&{FungibleToken.Balance, FungibleToken.Vault}>(),
+                    createEmptyVaultFunction: (fun (): @{FungibleToken.Vault} {
+                        return <-vaultRef.createEmptyVault()
+                    })
+                )
+            case Type<FungibleTokenMetadataViews.TotalSupply>():
+                return FungibleTokenMetadataViews.TotalSupply(totalSupply: ExampleToken.totalSupply)
+        }
+        return nil
     }
 
     init() {

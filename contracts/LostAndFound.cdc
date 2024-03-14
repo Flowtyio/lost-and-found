@@ -125,7 +125,7 @@ access(all) contract LostAndFound {
             if self.type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) {
                 let ref = (&self.item as &AnyResource?)!
                 let nft = ref as! &{NonFungibleToken.NFT}
-                return nft.getID()
+                return nft.id
             }
             return nil
         }
@@ -135,7 +135,7 @@ access(all) contract LostAndFound {
             if self.type.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
                 let ref = (&self.item as &AnyResource?)!
                 let ft = ref as! &{FungibleToken.Vault}
-                return ft.getBalance()
+                return ft.balance
             }
             return nil
         }
@@ -391,8 +391,8 @@ access(all) contract LostAndFound {
         }
     }
 
-    access(contract) fun getFlowProvider(): auth(FungibleToken.Withdrawable) &FlowToken.Vault {
-        return self.account.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(from: /storage/flowTokenVault)!
+    access(contract) fun getFlowProvider(): auth(FungibleToken.Withdraw) &FlowToken.Vault {
+        return self.account.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: /storage/flowTokenVault)!
     }
 
     // ShelfManager is a light-weight wrapper to get our shelves into storage.
@@ -422,7 +422,7 @@ access(all) contract LostAndFound {
             item: @AnyResource,
             memo: String?,
             display: MetadataViews.Display?,
-            storagePayment: auth(FungibleToken.Withdrawable) &{FungibleToken.Vault},
+            storagePayment: auth(FungibleToken.Withdraw) &{FungibleToken.Vault},
             flowTokenRepayment: Capability<&FlowToken.Vault>?
         ) : UInt64 {
             pre {
@@ -598,7 +598,7 @@ access(all) contract LostAndFound {
         init(_ flowTokenRepayment: Capability<&FlowToken.Vault>, lowBalanceThreshold: UFix64?) {
             self.flowTokenRepayment = flowTokenRepayment
 
-            let vault <- FlowToken.createEmptyVault()
+            let vault <- FlowToken.createEmptyVault(vaultType: Type<@FlowToken.Vault>())
             self.flowTokenVault <- vault
             self.lowBalanceThreshold = lowBalanceThreshold 
         }
@@ -713,7 +713,7 @@ access(all) contract LostAndFound {
         item: @AnyResource,
         memo: String?,
         display: MetadataViews.Display?,
-        storagePayment: auth(FungibleToken.Withdrawable) &{FungibleToken.Vault},
+        storagePayment: auth(FungibleToken.Withdraw) &{FungibleToken.Vault},
         flowTokenRepayment: Capability<&FlowToken.Vault>?
     ) : UInt64 {
         pre {
@@ -730,7 +730,7 @@ access(all) contract LostAndFound {
         cap: Capability,
         memo: String?,
         display: MetadataViews.Display?,
-        storagePayment: auth(FungibleToken.Withdrawable) &{FungibleToken.Vault},
+        storagePayment: auth(FungibleToken.Withdraw) &{FungibleToken.Vault},
         flowTokenRepayment: Capability<&FlowToken.Vault>
     ) {
         if cap.check<&{NonFungibleToken.Collection}>() {

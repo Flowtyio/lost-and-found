@@ -1,10 +1,10 @@
 import "LostAndFound"
 
 transaction {
-    prepare(acct: AuthAccount) {
-        let depositor <- acct.load<@AnyResource>(from: LostAndFound.DepositorStoragePath)
+    prepare(acct: auth(Storage, Capabilities) &Account) {
+        let depositor <- acct.storage.load<@AnyResource>(from: LostAndFound.DepositorStoragePath)
         destroy depositor
 
-        acct.unlink(LostAndFound.DepositorPublicPath)
+        acct.capabilities.unpublish(LostAndFound.DepositorPublicPath)
     }
 }

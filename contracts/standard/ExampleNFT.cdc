@@ -109,10 +109,8 @@ access(all) contract ExampleNFT: ViewResolver {
                     return MetadataViews.NFTCollectionData(
                         storagePath: ExampleNFT.CollectionStoragePath,
                         publicPath: ExampleNFT.CollectionPublicPath,
-                        providerPath: /private/exampleNFTCollection,
                         publicCollection: Type<&ExampleNFT.Collection>(),
                         publicLinkedType: Type<&ExampleNFT.Collection>(),
-                        providerLinkedType: Type<auth(NonFungibleToken.Withdrawable) &ExampleNFT.Collection>(),
                         createEmptyCollectionFunction: (fun (): @{NonFungibleToken.Collection} {
                             return <-ExampleNFT.createEmptyCollection()
                         })
@@ -143,6 +141,10 @@ access(all) contract ExampleNFT: ViewResolver {
                     return MetadataViews.dictToTraits(dict: dict, excludedNames: [])
             }
             return nil
+        }
+
+        access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
+            return <- create ExampleNFT.Collection()
         }
     }
 
@@ -195,10 +197,10 @@ access(all) contract ExampleNFT: ViewResolver {
         }
 
         // withdraw removes an NFT from the collection and moves it to the caller
-        access(NonFungibleToken.Withdrawable) fun withdraw(withdrawID: UInt64): @{NonFungibleToken.NFT} {
+        access(NonFungibleToken.Withdraw | NonFungibleToken.Owner) fun withdraw(withdrawID: UInt64): @{NonFungibleToken.NFT} {
             let token <- self.ownedNFTs.remove(key: withdrawID) ?? panic("missing NFT")
 
-            emit Withdraw(id: token.getID(), from: self.owner?.address)
+            emit Withdraw(id: token.id, from: self.owner?.address)
 
             return <-token
         }
@@ -337,6 +339,22 @@ access(all) contract ExampleNFT: ViewResolver {
             // deposit it in the recipient's account using their reference
             recipient.deposit(token: <-newNFT)
         }
+
+        access(all) fun mintAndReturnNFT(
+            name: String,
+            description: String,
+            thumbnail: String
+        ): @ExampleNFT.NFT {
+            ExampleNFT.totalSupply = ExampleNFT.totalSupply + 1
+
+            return <- create ExampleNFT.NFT(
+                id: ExampleNFT.totalSupply,
+                name: name,
+                description: description,
+                thumbnail: thumbnail,
+                royalties: []
+            )
+        }
     }
 
     /// Function that resolves a metadata view for this contract.
@@ -344,16 +362,14 @@ access(all) contract ExampleNFT: ViewResolver {
     /// @param view: The Type of the desired view.
     /// @return A structure representing the requested view.
     ///
-    access(all) view fun resolveView(_ view: Type): AnyStruct? {
-        switch view {
+    access(all) fun resolveContractView(resourceType: Type?, viewType: Type): AnyStruct? {
+        switch viewType {
             case Type<MetadataViews.NFTCollectionData>():
                 return MetadataViews.NFTCollectionData(
                         storagePath: ExampleNFT.CollectionStoragePath,
                         publicPath: ExampleNFT.CollectionPublicPath,
-                        providerPath: /private/exampleNFTCollection,
                         publicCollection: Type<&ExampleNFT.Collection>(),
                         publicLinkedType: Type<&ExampleNFT.Collection>(),
-                        providerLinkedType: Type<auth(NonFungibleToken.Withdrawable) &ExampleNFT.Collection>(),
                         createEmptyCollectionFunction: (fun (): @{NonFungibleToken.Collection} {
                             return <-ExampleNFT.createEmptyCollection()
                         })
@@ -384,7 +400,7 @@ access(all) contract ExampleNFT: ViewResolver {
     /// @return An array of Types defining the implemented views. This value will be used by
     ///         developers to know which parameter to pass to the resolveView() method.
     ///
-    access(all) view fun getViews(): [Type] {
+    access(all) view fun getContractViews(resourceType: Type?): [Type] {
         return [
             Type<MetadataViews.NFTCollectionData>(),
             Type<MetadataViews.NFTCollectionDisplay>()

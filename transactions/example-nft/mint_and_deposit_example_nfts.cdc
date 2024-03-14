@@ -10,26 +10,17 @@ transaction(recipient: Address, numToMint: Int) {
     // local variable for storing the minter reference
     let minter: &ExampleNFT.NFTMinter
 
-    let flowProvider: Capability<&FlowToken.Vault{FungibleToken.Provider}>
-    let flowReceiver: Capability<&FlowToken.Vault{FungibleToken.Receiver}>
+    let flowProvider: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
+    let flowReceiver: Capability<&FlowToken.Vault>
 
-    prepare(acct: AuthAccount) {
+    prepare(acct: auth(Storage, Capabilities) &Account) {
         // borrow a reference to the NFTMinter resource in storage
-        self.minter = acct.borrow<&ExampleNFT.NFTMinter>(from: /storage/exampleNFTMinter)
+        self.minter = acct.storage.borrow<&ExampleNFT.NFTMinter>(from: /storage/exampleNFTMinter)
             ?? panic("Could not borrow a reference to the NFT minter")
 
-        let flowTokenProviderPath = /private/flowTokenLostAndFoundProviderPath
-
-        if !acct.getCapability<&FlowToken.Vault{FungibleToken.Provider}>(flowTokenProviderPath).check() {
-            acct.unlink(flowTokenProviderPath)
-            acct.link<&FlowToken.Vault{FungibleToken.Provider}>(
-                flowTokenProviderPath,
-                target: /storage/flowTokenVault
-            )
-        }
-
-        self.flowProvider = acct.getCapability<&FlowToken.Vault{FungibleToken.Provider}>(flowTokenProviderPath)
-        self.flowReceiver = acct.getCapability<&FlowToken.Vault{FungibleToken.Receiver}>(/public/flowTokenReceiver)
+        let cap = acct.capabilities.storage.issue<auth(FungibleToken.Withdraw) &FlowToken.Vault>(/storage/flowTokenVault)
+        self.flowProvider = cap
+        self.flowReceiver = acct.capabilities.get<&FlowToken.Vault>(/public/flowTokenReceiver)!
     }
 
     execute {
@@ -48,7 +39,7 @@ transaction(recipient: Address, numToMint: Int) {
                 item: <-token,
                 memo: memo,
                 display: display,
-                storagePayment: &storageFee as &FungibleToken.Vault,
+                storagePayment: &storageFee as auth(FungibleToken.Withdraw) &{FungibleToken.Vault},
                 flowTokenRepayment: self.flowReceiver
             )
 

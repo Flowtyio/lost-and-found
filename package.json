@@ -24,6 +24,6 @@
   },
   "homepage": "https://github.com/Flowtyio/lost-and-found#readme",
   "dependencies": {
-    "@flowtyio/flow-contracts": "^0.1.0-beta.1"
+    "@flowtyio/flow-contracts": "^0.1.0-beta.6"
   }
 }
