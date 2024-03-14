@@ -7,24 +7,18 @@ access(all) let lowBalanceThreshold = 1.0
 
 // the cadence testing framework allocates 4 addresses for system acounts,
 // and 10 pre-created accounts for us to use for deployments:
-access(all) let Account0x1 = Address(0x0000000000000001)
-access(all) let Account0x2 = Address(0x0000000000000002)
-access(all) let Account0x3 = Address(0x0000000000000003)
-access(all) let Account0x4 = Address(0x0000000000000004)
-access(all) let Account0x5 = Address(0x0000000000000005)
-access(all) let Account0x6 = Address(0x0000000000000006)
-access(all) let Account0x7 = Address(0x0000000000000007)
-access(all) let Account0x8 = Address(0x0000000000000008)
-access(all) let Account0x9 = Address(0x0000000000000009)
-access(all) let Account0xa = Address(0x000000000000000a)
-access(all) let Account0xb = Address(0x000000000000000b)
-access(all) let Account0xc = Address(0x000000000000000c)
-access(all) let Account0xd = Address(0x000000000000000d)
-access(all) let Account0xe = Address(0x000000000000000e)
+access(all) let Account0x7 = Test.getAccount(0x0000000000000007)
+access(all) let Account0x8 = Test.getAccount(0x0000000000000008)
+access(all) let Account0x9 = Test.getAccount(0x0000000000000009)
+access(all) let Account0xa = Test.getAccount(0x000000000000000a)
+access(all) let Account0xb = Test.getAccount(0x000000000000000b)
+access(all) let Account0xc = Test.getAccount(0x000000000000000c)
+access(all) let Account0xd = Test.getAccount(0x000000000000000d)
+access(all) let Account0xe = Test.getAccount(0x000000000000000e)
 
-access(all) let lostAndFoundAccount = Test.getAccount(Account0x5)
-access(all) let exampleNftAccount = Test.getAccount(Account0x6)
-access(all) let exampleTokenAccount = Test.getAccount(Account0x7)
+access(all) let lostAndFoundAccount = Account0x7
+access(all) let exampleNftAccount = Account0x8
+access(all) let exampleTokenAccount = Account0x9
 
 access(all) fun scriptExecutor(_ scriptName: String, _ arguments: [AnyStruct]): AnyStruct? {
     let scriptCode = loadCode(scriptName, "scripts")

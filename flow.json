@@ -9,7 +9,7 @@
     "LostAndFound": {
       "source": "./contracts/LostAndFound.cdc",
       "aliases": {
-        "testing": "0x0000000000000005",
+        "testing": "0x0000000000000007",
         "emulator": "0xf8d6e0586b0a20c7",
         "testnet": "0xbe4635353f55bbd4",
         "mainnet": "0x473d6a2c37eab5be"
@@ -18,7 +18,7 @@
     "LostAndFoundHelper": {
       "source": "./contracts/LostAndFoundHelper.cdc",
       "aliases": {
-        "testing": "0x0000000000000005",
+        "testing": "0x0000000000000007",
         "emulator": "0xf8d6e0586b0a20c7",
         "testnet": "0xbe4635353f55bbd4",
         "mainnet": "0x473d6a2c37eab5be"
@@ -27,7 +27,7 @@
     "FeeEstimator": {
       "source": "./contracts/FeeEstimator.cdc",
       "aliases": {
-        "testing": "0x0000000000000005",
+        "testing": "0x0000000000000007",
         "emulator": "0xf8d6e0586b0a20c7",
         "testnet": "0xbe4635353f55bbd4",
         "mainnet": "0x473d6a2c37eab5be"
@@ -36,13 +36,13 @@
     "ExampleNFT": {
       "source": "./contracts/standard/ExampleNFT.cdc",
       "aliases": {
-        "testing": "0x0000000000000006"
+        "testing": "0x0000000000000008"
       }
     },
     "ExampleToken": {
       "source": "./contracts/standard/ExampleToken.cdc",
       "aliases": {
-        "testing": "0x0000000000000007"
+        "testing": "0x0000000000000009"
       }
     },
     "FungibleToken": {
