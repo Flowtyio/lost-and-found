@@ -149,8 +149,8 @@ access(all) contract LostAndFound {
             var redeemableItem <- self.item <- nil
             let cap = receiver.borrow<&AnyResource>()!
 
-            if cap.isInstance(Type<@{NonFungibleToken.Collection}>()) {
-                let target = receiver.borrow<&{NonFungibleToken.Collection}>()!
+            if cap.isInstance(Type<@{NonFungibleToken.CollectionPublic}>()) {
+                let target = receiver.borrow<&{NonFungibleToken.CollectionPublic}>()!
                 let token <- redeemableItem  as! @{NonFungibleToken.NFT}?
                 self.redeemed = true
                 emit TicketRedeemed(redeemer: self.redeemer, ticketID: self.uuid, type: token.getType())
@@ -566,9 +566,9 @@ access(all) contract LostAndFound {
             memo: String?,
             display: MetadataViews.Display?
         ) {
-            if cap.check<&{NonFungibleToken.Collection}>() {
+            if cap.check<&{NonFungibleToken.CollectionPublic}>() {
                 let nft <- item as! @{NonFungibleToken.NFT}
-                cap.borrow<&{NonFungibleToken.Collection}>()!.deposit(token: <-nft)
+                cap.borrow<&{NonFungibleToken.CollectionPublic}>()!.deposit(token: <-nft)
             } else if cap.check<&{FungibleToken.Receiver}>() {
                 let vault <- item as! @{FungibleToken.Vault}
                 cap.borrow<&{FungibleToken.Receiver}>()!.deposit(from: <-vault)
@@ -733,9 +733,9 @@ access(all) contract LostAndFound {
         storagePayment: auth(FungibleToken.Withdraw) &{FungibleToken.Vault},
         flowTokenRepayment: Capability<&FlowToken.Vault>
     ) {
-        if cap.check<&{NonFungibleToken.Collection}>() {
+        if cap.check<&{NonFungibleToken.CollectionPublic}>() {
             let nft <- item as! @{NonFungibleToken.NFT}
-            cap.borrow<&{NonFungibleToken.Collection}>()!.deposit(token: <-nft)
+            cap.borrow<&{NonFungibleToken.CollectionPublic}>()!.deposit(token: <-nft)
         } else if cap.check<&{FungibleToken.Receiver}>() {
             let vault <- item as! @{FungibleToken.Vault}
             cap.borrow<&{FungibleToken.Receiver}>()!.deposit(from: <-vault)
