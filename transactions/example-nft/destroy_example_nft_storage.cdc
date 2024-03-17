@@ -3,9 +3,9 @@ import "FungibleToken"
 import "ExampleNFT"
 
 transaction {
-    prepare(signer: AuthAccount) {
-        let resource <- signer.load<@AnyResource>(from: ExampleNFT.CollectionStoragePath)
-        destroy resource
-        signer.unlink(ExampleNFT.CollectionPublicPath)
+    prepare(signer: auth(Storage, Capabilities) &Account) {
+        let r <- signer.storage.load<@AnyResource>(from: ExampleNFT.CollectionStoragePath)
+        destroy r
+        signer.capabilities.unpublish(ExampleNFT.CollectionPublicPath)
     }
 }

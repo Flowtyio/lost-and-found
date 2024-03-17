@@ -8,57 +8,43 @@ import "LostAndFound"
 
 transaction {
 
-    prepare(signer: AuthAccount) {
+    prepare(signer: auth(Storage, Capabilities) &Account) {
         // Return early if the account already stores a ExampleToken Vault
-        if signer.borrow<&AnyResource>(from: /storage/exampleTokenVault) == nil {
+        if signer.storage.borrow<&AnyResource>(from: /storage/exampleTokenVault) == nil {
             // Create a new ExampleToken Vault and put it in storage
-            signer.save(
+            signer.storage.save(
                 <-ExampleToken.createEmptyVault(),
                 to: /storage/exampleTokenVault
             )
 
-            // Create a public capability to the Vault that only exposes
-            // the deposit function through the Receiver interface
-            signer.link<&ExampleToken.Vault{FungibleToken.Receiver}>(
-                /public/exampleTokenReceiver,
-                target: /storage/exampleTokenVault
-            )
-
-            // Create a public capability to the Vault that only exposes
-            // the balance field through the Balance interface
-            signer.link<&ExampleToken.Vault{FungibleToken.Balance}>(
-                /public/exampleTokenBalance,
-                target: /storage/exampleTokenVault
-            )
+            let cap = signer.capabilities.storage.issue<&ExampleToken.Vault>(/storage/exampleTokenVault)
+            signer.capabilities.publish(cap, at: /public/exampleTokenReceiver)
+            signer.capabilities.publish(cap, at: /public/exampleTokenBalance)
         }
 
 
         // Return early if the account already stores a ExampleToken Vault
-        if signer.borrow<&AnyResource>(from: ExampleNFT.CollectionStoragePath) == nil {
+        if signer.storage.borrow<&AnyResource>(from: ExampleNFT.CollectionStoragePath) == nil {
             // Create a new ExampleToken Vault and put it in storage
-            signer.save(
+            signer.storage.save(
                 <-ExampleNFT.createEmptyCollection(),
                 to: ExampleNFT.CollectionStoragePath
             )
 
-            // Create a public capability to the Vault that only exposes
-            // the balance field through the Balance interface
-            signer.link<&ExampleNFT.Collection{NonFungibleToken.CollectionPublic}>(
-                ExampleNFT.CollectionPublicPath,
-                target: ExampleNFT.CollectionStoragePath
-            )
+            let cap = signer.capabilities.storage.issue<&ExampleNFT.Collection>(ExampleNFT.CollectionStoragePath)
+            signer.capabilities.publish(cap, at: ExampleNFT.CollectionPublicPath)
         }
 
         let redeemableTypes = LostAndFound.getRedeemableTypes(signer.address)
         let nftType = Type<@ExampleNFT.NFT>()
         if redeemableTypes.contains(nftType) {
-            let nftReceiver = signer.getCapability<&AnyResource{NonFungibleToken.CollectionPublic}>(ExampleNFT.CollectionPublicPath)
+            let nftReceiver = signer.capabilities.get<&{NonFungibleToken.Collection}>(ExampleNFT.CollectionPublicPath)!
             LostAndFound.redeemAll(type: nftType, max: nil, receiver: nftReceiver)
         }
 
         let ftType = Type<@ExampleToken.Vault>()
         if redeemableTypes.contains(ftType) {
-            let ftReceiver = signer.getCapability<&AnyResource{FungibleToken.Receiver}>(/public/exampleTokenReceiver)
+            let ftReceiver = signer.capabilities.get<&{FungibleToken.Receiver}>(/public/exampleTokenReceiver)!
             LostAndFound.redeemAll(type: Type<@ExampleToken.Vault>(), max: nil, receiver: ftReceiver)
         }
     }

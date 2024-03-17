@@ -3,11 +3,13 @@ import "FungibleToken"
 import "FlowToken"
 
 transaction(newThreshold: UFix64?) {
-    let lfDepositor: &LostAndFound.Depositor
+    let lfDepositor: auth(Mutate) &LostAndFound.Depositor
 
-    prepare(acct: AuthAccount) {
-        self.lfDepositor = acct.borrow<&LostAndFound.Depositor>(from: LostAndFound.DepositorStoragePath)!
+    prepare(acct: auth(Storage) &Account) {
+        self.lfDepositor = acct.storage.borrow<auth(Mutate) &LostAndFound.Depositor>(from: LostAndFound.DepositorStoragePath)!
+    }
 
+    execute {
         self.lfDepositor.setLowBalanceThreshold(threshold: newThreshold)
     }
 }

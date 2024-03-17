@@ -7,25 +7,17 @@ import "LostAndFound"
 transaction(redeemer: Address, amount: UFix64) {
     let tokenAdmin: &ExampleToken.Administrator
 
-    let flowProvider: Capability<&FlowToken.Vault{FungibleToken.Provider}>
-    let flowReceiver: Capability<&FlowToken.Vault{FungibleToken.Receiver}>
+    let flowProvider: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
+    let flowReceiver: Capability<&FlowToken.Vault>
 
-    prepare(acct: AuthAccount) {
-        self.tokenAdmin = acct.borrow<&ExampleToken.Administrator>(from: /storage/exampleTokenAdmin)
+    prepare(acct: auth(Storage, Capabilities) &Account) {
+        self.tokenAdmin = acct.storage.borrow<&ExampleToken.Administrator>(from: /storage/exampleTokenAdmin)
             ?? panic("acct is not the token admin")
 
         let flowTokenProviderPath = /private/flowTokenLostAndFoundProviderPath
-
-        if !acct.getCapability<&FlowToken.Vault{FungibleToken.Provider}>(flowTokenProviderPath).check() {
-            acct.unlink(flowTokenProviderPath)
-            acct.link<&FlowToken.Vault{FungibleToken.Provider}>(
-                flowTokenProviderPath,
-                target: /storage/flowTokenVault
-            )
-        }
-
-        self.flowProvider = acct.getCapability<&FlowToken.Vault{FungibleToken.Provider}>(flowTokenProviderPath)
-        self.flowReceiver = acct.getCapability<&FlowToken.Vault{FungibleToken.Receiver}>(/public/flowTokenReceiver)
+        let cap = acct.capabilities.storage.issue<auth(FungibleToken.Withdraw) &FlowToken.Vault>(/storage/flowTokenVault)
+        self.flowProvider = cap
+        self.flowReceiver = acct.capabilities.get<&FlowToken.Vault>(/public/flowTokenReceiver)!
     }
 
     execute {
@@ -34,14 +26,14 @@ transaction(redeemer: Address, amount: UFix64) {
         let memo = "test memo"
         let depositEstimate <- LostAndFound.estimateDeposit(redeemer: redeemer, item: <-mintedVault, memo: memo, display: nil)
         let storageFee <- self.flowProvider.borrow()!.withdraw(amount: depositEstimate.storageFee)
-        let resource <- depositEstimate.withdraw()
+        let item <- depositEstimate.withdraw()
 
         LostAndFound.deposit(
             redeemer: redeemer,
-            item: <-resource,
+            item: <-item,
             memo: memo,
             display: nil,
-            storagePayment: &storageFee as &FungibleToken.Vault,
+            storagePayment: &storageFee as auth(FungibleToken.Withdraw) &{FungibleToken.Vault},
             flowTokenRepayment: self.flowReceiver
         )
 

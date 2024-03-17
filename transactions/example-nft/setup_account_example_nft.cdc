@@ -4,24 +4,20 @@ import "ExampleNFT"
 
 transaction {
 
-    prepare(signer: AuthAccount) {
+    prepare(signer: auth(Storage, Capabilities) &Account) {
 
         // Return early if the account already stores a ExampleToken Vault
-        if signer.borrow<&ExampleNFT.NFT>(from: ExampleNFT.CollectionStoragePath) != nil {
+        if signer.storage.borrow<&ExampleNFT.NFT>(from: ExampleNFT.CollectionStoragePath) != nil {
             return
         }
 
         // Create a new ExampleToken Vault and put it in storage
-        signer.save(
+        signer.storage.save(
             <-ExampleNFT.createEmptyCollection(),
             to: ExampleNFT.CollectionStoragePath
         )
 
-        // Create a public capability to the Vault that only exposes
-        // the balance field through the Balance interface
-        signer.link<&ExampleNFT.Collection{NonFungibleToken.CollectionPublic}>(
-            ExampleNFT.CollectionPublicPath,
-            target: ExampleNFT.CollectionStoragePath
-        )
+        let cap = signer.capabilities.storage.issue<&ExampleNFT.Collection>(ExampleNFT.CollectionStoragePath)
+        signer.capabilities.publish(cap, at: ExampleNFT.CollectionPublicPath)
     }
 }
