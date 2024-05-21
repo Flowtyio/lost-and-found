@@ -163,7 +163,7 @@ access(all) contract ExampleNFT: ViewResolver {
 
         // dictionary of NFT conforming tokens
         // NFT is a resource type with an `UInt64` ID field
-        access(self) var ownedNFTs: @{UInt64: {NonFungibleToken.NFT}}
+        access(all) var ownedNFTs: @{UInt64: {NonFungibleToken.NFT}}
 
         init () {
             self.ownedNFTs <- {}
@@ -197,7 +197,7 @@ access(all) contract ExampleNFT: ViewResolver {
         }
 
         // withdraw removes an NFT from the collection and moves it to the caller
-        access(NonFungibleToken.Withdraw | NonFungibleToken.Owner) fun withdraw(withdrawID: UInt64): @{NonFungibleToken.NFT} {
+        access(NonFungibleToken.Withdraw) fun withdraw(withdrawID: UInt64): @{NonFungibleToken.NFT} {
             let token <- self.ownedNFTs.remove(key: withdrawID) ?? panic("missing NFT")
 
             emit Withdraw(id: token.id, from: self.owner?.address)

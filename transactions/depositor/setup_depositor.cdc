@@ -7,7 +7,6 @@ transaction(lowBalanceThreshold: UFix64?) {
     prepare(acct: auth(Storage, Capabilities) &Account) {
         if acct.storage.borrow<&LostAndFound.Depositor>(from: LostAndFound.DepositorStoragePath) == nil {
             let flowTokenRepayment = acct.capabilities.get<&FlowToken.Vault>(/public/flowTokenReceiver)
-                ?? panic("flow token repayment capability not found")
             let depositor <- LostAndFound.createDepositor(flowTokenRepayment, lowBalanceThreshold: lowBalanceThreshold)
             acct.storage.save(<-depositor, to: LostAndFound.DepositorStoragePath)
 

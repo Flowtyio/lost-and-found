@@ -15,7 +15,6 @@ transaction(recipient: Address, num: Int) {
 
     execute {
         let cap = getAccount(recipient).capabilities.get<&{NonFungibleToken.Collection}>(ExampleNFT.CollectionPublicPath) 
-            ?? panic("receiver not found")
         let receiver = cap.borrow() ?? panic("unable to borrow collection")
 
         var count = 0
