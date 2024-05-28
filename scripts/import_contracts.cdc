@@ -1,6 +1,6 @@
 import "LostAndFound"
 
-pub fun main(): Bool {
+access(all) fun main(): Bool {
     return true
 }
  

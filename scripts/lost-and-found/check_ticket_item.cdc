@@ -1,6 +1,6 @@
 import "LostAndFound"
 
-pub fun main(addr: Address, ticketID: UInt64, ticketTypeIdentifier: String): Bool {
+access(all) fun main(addr: Address, ticketID: UInt64, ticketTypeIdentifier: String): Bool {
     let composite = CompositeType(ticketTypeIdentifier)!
 
     let manager = LostAndFound.borrowShelfManager()

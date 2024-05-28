@@ -1,5 +1,5 @@
 import "LostAndFound"
 
-pub fun main(): Address {
+access(all) fun main(): Address {
     return LostAndFound.getAddress()
 }

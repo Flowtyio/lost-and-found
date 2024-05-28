@@ -7,14 +7,15 @@ transaction(recipient: Address, num: Int) {
     // local variable for storing the minter reference
     let minter: &ExampleNFT.NFTMinter
 
-    prepare(acct: AuthAccount) {
+    prepare(acct: auth(Storage, Capabilities) &Account) {
         // borrow a reference to the NFTMinter resource in storage
-        self.minter = acct.borrow<&ExampleNFT.NFTMinter>(from: /storage/exampleNFTMinter)
+        self.minter = acct.storage.borrow<&ExampleNFT.NFTMinter>(from: /storage/exampleNFTMinter)
             ?? panic("Could not borrow a reference to the NFT minter")
     }
 
     execute {
-        let receiver = getAccount(recipient).getCapability<&{NonFungibleToken.CollectionPublic}>(ExampleNFT.CollectionPublicPath).borrow()!
+        let cap = getAccount(recipient).capabilities.get<&{NonFungibleToken.Collection}>(ExampleNFT.CollectionPublicPath) 
+        let receiver = cap.borrow() ?? panic("unable to borrow collection")
 
         var count = 0
         while count < num {

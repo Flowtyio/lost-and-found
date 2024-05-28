@@ -6,49 +6,56 @@ import "MetadataViews"
 
 import "LostAndFound"
 
-transaction(recipient: Address) {
+transaction(recipient: Address, revoke: Bool) {
     // local variable for storing the minter reference
     let minter: &ExampleNFT.NFTMinter
 
-    let flowProvider: Capability<&FlowToken.Vault{FungibleToken.Provider}>
-    let flowReceiver: Capability<&FlowToken.Vault{FungibleToken.Receiver}>
+    let flowProvider: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
+    let flowReceiver: Capability<&FlowToken.Vault>
+    let nftReceiverCap: Capability<&{NonFungibleToken.Collection}>
 
-    prepare(acct: AuthAccount) {
+    prepare(sender: auth(Storage,Capabilities) &Account, receiver: auth(Storage,Capabilities) &Account) {
         // borrow a reference to the NFTMinter resource in storage
-        self.minter = acct.borrow<&ExampleNFT.NFTMinter>(from: /storage/exampleNFTMinter)
+        self.minter = sender.storage.borrow<&ExampleNFT.NFTMinter>(from: /storage/exampleNFTMinter)
             ?? panic("Could not borrow a reference to the NFT minter")
 
-        let flowTokenProviderPath = /private/flowTokenLostAndFoundProviderPath
+        var provider: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>? = nil
+        sender.capabilities.storage.forEachController(forPath: /storage/flowTokenVault, fun(c: &StorageCapabilityController): Bool {
+            if c.borrowType == Type<auth(FungibleToken.Withdraw) &FlowToken.Vault>() {
+                provider = c.capability as! Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
+            }
+            return true
+        })
 
-        if !acct.getCapability<&FlowToken.Vault{FungibleToken.Provider}>(flowTokenProviderPath).check() {
-            acct.unlink(flowTokenProviderPath)
-            acct.link<&FlowToken.Vault{FungibleToken.Provider}>(
-                flowTokenProviderPath,
-                target: /storage/flowTokenVault
-            )
+        if provider == nil {
+            provider = sender.capabilities.storage.issue<auth(FungibleToken.Withdraw) &FlowToken.Vault>(/storage/flowTokenVault)
         }
 
-        self.flowProvider = acct.getCapability<&FlowToken.Vault{FungibleToken.Provider}>(flowTokenProviderPath)
-        self.flowReceiver = acct.getCapability<&FlowToken.Vault{FungibleToken.Receiver}>(/public/flowTokenReceiver)
+        self.flowProvider = provider!
+        self.flowReceiver = sender.capabilities.get<&FlowToken.Vault>(/public/flowTokenReceiver)!
+
+        self.nftReceiverCap = receiver.capabilities.storage.issue<&{NonFungibleToken.Collection}>(ExampleNFT.CollectionStoragePath)
+
+        if revoke {
+            receiver.capabilities.storage.getController(byCapabilityID: self.nftReceiverCap.id)!.delete()
+        }
     }
 
     execute {
-        let exampleNFTReceiver = getAccount(recipient).getCapability<&{NonFungibleToken.CollectionPublic}>(ExampleNFT.CollectionPublicPath)
-
         let token <- self.minter.mint(name: "testname", description: "descr", thumbnail: "image.html")
         let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?
 
         let memo = "test memo"
         let depositEstimate <- LostAndFound.estimateDeposit(redeemer: recipient, item: <-token, memo: memo, display: display)
         let storageFee <- self.flowProvider.borrow()!.withdraw(amount: depositEstimate.storageFee)
-        let resource <- depositEstimate.withdraw()
+        let item <- depositEstimate.withdraw()
 
         LostAndFound.trySendResource(
-            resource: <-resource,
-            cap: exampleNFTReceiver,
+            item: <-item,
+            cap: self.nftReceiverCap,
             memo: nil,
             display: display,
-            storagePayment: &storageFee as &FungibleToken.Vault,
+            storagePayment: &storageFee as auth(FungibleToken.Withdraw) &{FungibleToken.Vault},
             flowTokenRepayment: self.flowReceiver
         )
         

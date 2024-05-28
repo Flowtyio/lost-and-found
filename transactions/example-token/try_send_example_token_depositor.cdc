@@ -4,25 +4,37 @@ import "ExampleToken"
 
 import "LostAndFound"
 
-transaction(recipient: Address, amount: UFix64) {
+transaction(recipient: Address, amount: UFix64, revoke: Bool) {
     let tokenAdmin: &ExampleToken.Administrator
-    let depositor: &LostAndFound.Depositor
+    let depositor: auth(LostAndFound.Deposit) &LostAndFound.Depositor
+    let receiverCap: Capability<&{FungibleToken.Vault}>
 
-    prepare(acct: AuthAccount) {
-        self.tokenAdmin = acct.borrow<&ExampleToken.Administrator>(from: /storage/exampleTokenAdmin)
+    prepare(sender: auth(Storage, Capabilities) &Account, receiver: auth(Storage, Capabilities) &Account) {
+        let v <- ExampleToken.createEmptyVault()
+        let publicPath = v.getDefaultPublicPath()!
+        let receiverPath = v.getDefaultReceiverPath()!
+        let storagePath = v.getDefaultStoragePath()!
+        destroy v
+
+        self.tokenAdmin = sender.storage.borrow<&ExampleToken.Administrator>(from: /storage/exampleTokenAdmin)
             ?? panic("acct is not the token admin")
-        self.depositor = acct.borrow<&LostAndFound.Depositor>(from: LostAndFound.DepositorStoragePath)!
+        self.depositor = sender.storage.borrow<auth(LostAndFound.Deposit) &LostAndFound.Depositor>(from: LostAndFound.DepositorStoragePath)!
+        
+        self.receiverCap = receiver.capabilities.storage.issue<&{FungibleToken.Vault}>(storagePath)
+
+        if revoke {
+            receiver.capabilities.storage.getController(byCapabilityID: self.receiverCap.id)!.delete()
+        }
     }
 
     execute {
         let minter <- self.tokenAdmin.createNewMinter(allowedAmount: amount)
         let mintedVault <- minter.mintTokens(amount: amount)
         let memo = "test memo"
-        let exampleTokenReceiver = getAccount(recipient).getCapability<&{FungibleToken.Receiver}>(/public/exampleTokenReceiver)
 
         self.depositor.trySendResource(
             item: <-mintedVault,
-            cap: exampleTokenReceiver,
+            cap: self.receiverCap,
             memo: nil,
             display: nil
         )

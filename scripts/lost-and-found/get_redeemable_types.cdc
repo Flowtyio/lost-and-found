@@ -1,5 +1,5 @@
 import "LostAndFound"
 
-pub fun main(addr: Address): [Type] {
+access(all) fun main(addr: Address): [Type] {
     return LostAndFound.getRedeemableTypes(addr)
 }
