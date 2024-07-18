@@ -98,7 +98,7 @@
       "aliases": {
         "emulator": "0xf8d6e0586b0a20c7",
         "testnet": "0x8c5303eaa26202d6",
-        "mainnet": "0xf919ee77447b7497"
+        "mainnet": "0xe467b9dd11fa00df"
       }
     },
     "Burner": {
