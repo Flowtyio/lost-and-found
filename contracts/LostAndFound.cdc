@@ -555,12 +555,14 @@ access(all) contract LostAndFound {
             let uuid = ticket.uuid
             shelf.deposit(ticket: <-ticket, flowTokenRepayment: flowTokenRepayment)
             
-            let storageFee = FeeEstimator.storageUsedToFlowAmount(LostAndFound.account.storage.used - storageBefore)
-            LostAndFound.storageFees[uuid] = storageFee
+            if LostAndFound.account.storage.used > storageBefore {
+                let storageFee = FeeEstimator.storageUsedToFlowAmount(LostAndFound.account.storage.used - storageBefore)
+                LostAndFound.storageFees[uuid] = storageFee
 
-            let storagePaymentVault <- self.withdrawTokens(amount: storageFee)
+                let storagePaymentVault <- self.withdrawTokens(amount: storageFee)   
+                receiver.deposit(from: <-storagePaymentVault)
+            }
 
-            receiver.deposit(from: <-storagePaymentVault)
             return uuid
         }
 
